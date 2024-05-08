@@ -1,13 +1,14 @@
-
 use std::{collections::VecDeque, ops::Deref};
 
-use bevy::{prelude::*, ui::RelativeCursorPosition, window::PrimaryWindow};
+use bevy::{prelude::*, reflect::List, ui::RelativeCursorPosition, window::PrimaryWindow};
 use bevy_trait_query::One;
 
 use crate::{
     assets::GameSprites,
-    items::{sword::{Sword, SwordType}, Item, ItemPlugin}
-    ,
+    items::{
+        sword::{Sword, SwordType},
+        Item, ItemPlugin,
+    },
     AppState,
 };
 
@@ -15,22 +16,20 @@ pub struct InventoryPlugin;
 
 impl Plugin for InventoryPlugin {
     fn build(&self, app: &mut App) {
-        app
-            .add_plugins(ItemPlugin)
-            .add_systems(OnEnter(AppState::Game), (
-                setup_inventory,
-                open_gui
-            ).chain())
-            .add_systems(Update, (
-                start_dragging,
-                stop_dragging,
-                update_dragging,
-            ).chain().run_if(in_state(AppState::Game)));
+        app.add_plugins(ItemPlugin)
+            .add_systems(OnEnter(AppState::Game), (setup_inventory, open_gui).chain())
+            .add_systems(
+                Update,
+                (start_dragging, stop_dragging, update_drag_container)
+                    .chain()
+                    .run_if(in_state(AppState::Game)),
+            );
     }
 }
 
-
 const SCROLL_SIZE: usize = 12;
+
+const ITEM_UI_SIZE: f32 = 16.;
 
 #[derive(Component, Default)]
 struct Scroll(VecDeque<Entity>);
@@ -45,96 +44,115 @@ struct ScrollUI;
 struct ItemUI(Entity);
 
 #[derive(Component)]
+struct DragContainer;
+
+#[derive(Component)]
 struct Draggable;
 
 #[derive(Component)]
-struct Dragging;
+struct Dragging {
+    last_parent: Entity,
+    last_index: usize,
+}
 
+fn setup_inventory(mut commands: Commands) {
+    let mut scroll = Scroll::default();
 
-fn setup_inventory(
-    mut commands: Commands,
-) {
-    let scroll_entity = commands.spawn(Scroll::default()).id();
-
-    commands.entity(scroll_entity).with_children(|parent| {
-        parent.spawn(Sword {
-            r#type: SwordType::Wooden,
-        });
-        parent.spawn(Sword {
-            r#type: SwordType::Iron,
-        });
-        parent.spawn(Sword {
-            r#type: SwordType::Magic,
-        });
-    });
+    scroll.0.push_back(
+        commands
+            .spawn(Sword {
+                r#type: SwordType::Wooden,
+            })
+            .id(),
+    );
+    scroll.0.push_back(
+        commands
+            .spawn(Sword {
+                r#type: SwordType::Iron,
+            })
+            .id(),
+    );
+    scroll.0.push_back(
+        commands
+            .spawn(Sword {
+                r#type: SwordType::Magic,
+            })
+            .id(),
+    );
+    commands.spawn(scroll);
 }
 
 fn open_gui(
     mut commands: Commands,
     game_sprites: Res<GameSprites>,
-    scroll_q: Query<&Children, With<Scroll>>,
+    scroll_q: Query<&Scroll>,
     items_q: Query<One<&dyn Item>>,
 ) {
-    let scroll_children = scroll_q.single();
+    let scroll = scroll_q.single();
 
-    let scroll_image = commands.spawn((
-        ImageBundle {
-            image: UiImage::new(game_sprites.inventory_scroll.clone()),
-            style: Style {
-                flex_direction: FlexDirection::Row,
-                align_items: AlignItems::Center,
-                justify_content: JustifyContent::FlexStart,
-                width: Val::Px(245.),
-                height: Val::Px(25.),
-                padding: UiRect {
-                    left: Val::Px(2.),
-                    right: Val::Px(3.),
+    let scroll_image = commands
+        .spawn((
+            ImageBundle {
+                image: UiImage::new(game_sprites.inventory_scroll.clone()),
+                style: Style {
+                    flex_direction: FlexDirection::Row,
+                    align_items: AlignItems::Center,
+                    justify_content: JustifyContent::FlexStart,
+                    column_gap: Val::Px(4.),
+                    width: Val::Px(245.),
+                    height: Val::Px(25.),
+                    padding: UiRect {
+                        left: Val::Px(2.),
+                        right: Val::Px(3.),
+                        ..default()
+                    },
                     ..default()
                 },
-                row_gap: Val::Px(4.),
+                ..default()
+            },
+            ScrollUI,
+        ))
+        .id();
+
+    let background_image = commands
+        .spawn(ImageBundle {
+            image: UiImage::new(game_sprites.inventory_bg.clone()),
+            style: Style {
+                flex_direction: FlexDirection::Column,
+                align_items: AlignItems::Center,
+                justify_content: JustifyContent::Start,
+                width: Val::Px(260.),
+                height: Val::Px(74.),
+                padding: UiRect {
+                    top: Val::Px(8.),
+                    ..default()
+                },
                 ..default()
             },
             ..default()
-        },
-        ScrollUI,
-    )).id();
+        })
+        .id();
 
-    let background_image = commands.spawn(ImageBundle {
-        image: UiImage::new(game_sprites.inventory_bg.clone()),
-        style: Style {
-            flex_direction: FlexDirection::Column,
-            align_items: AlignItems::Center,
-            justify_content: JustifyContent::Start,
-            width: Val::Px(260.),
-            height: Val::Px(74.),
-            padding: UiRect {
-                top: Val::Px(8.),
+    let root_node = commands
+        .spawn(NodeBundle {
+            style: Style {
+                flex_direction: FlexDirection::Column,
+                align_items: AlignItems::Center,
+                justify_content: JustifyContent::Start,
+                width: Val::Percent(100.0),
+                height: Val::Percent(100.0),
+                padding: UiRect {
+                    top: Val::Px(4.),
+                    ..default()
+                },
                 ..default()
             },
             ..default()
-        },
-        ..default()
-    }).id();
-
-    let root_node = commands.spawn(NodeBundle {
-        style: Style {
-            flex_direction: FlexDirection::Column,
-            align_items: AlignItems::Center,
-            justify_content: JustifyContent::Start,
-            width: Val::Percent(100.0),
-            height: Val::Percent(100.0),
-            padding: UiRect {
-                top: Val::Px(4.),
-                ..default()
-            },
-            ..default()
-        },
-        ..default()
-    }).id();
-
+        })
+        .id();
 
     commands.entity(scroll_image).with_children(|mut parent| {
-        for &item_entity in scroll_children.iter() {
+        for &item_entity in scroll.0.iter() {
             let Ok(item) = items_q.get(item_entity) else {
                 continue;
             };
@@ -143,20 +161,40 @@ fn open_gui(
     });
     commands.entity(background_image).add_child(scroll_image);
     commands.entity(root_node).add_child(background_image);
+
+    commands.spawn((
+        DragContainer,
+        NodeBundle {
+            style: Style {
+                align_items: AlignItems::Center,
+                justify_content: JustifyContent::Center,
+                position_type: PositionType::Absolute,
+                ..default()
+            },
+            ..default()
+        },
+    ));
 }
 
 fn start_dragging(
     mut commands: Commands,
     mouse: Res<ButtonInput<MouseButton>>,
-    draggables_q: Query<(Entity, &RelativeCursorPosition), (With<Draggable>, Without<Dragging>)>,
+    drag_container_q: Query<Entity, With<DragContainer>>,
+    draggables_q: Query<
+        (Entity, &Parent, &RelativeCursorPosition),
+        (With<Draggable>, Without<Dragging>),
+    >,
 ) {
-    for (entity,relative_cursor_position) in draggables_q.iter() {
+    for (entity, parent, relative_cursor_position) in draggables_q.iter() {
         let Some(mut entity_commands) = commands.get_entity(entity) else {
             continue;
         };
         if relative_cursor_position.mouse_over() && mouse.just_pressed(MouseButton::Left) {
-            entity_commands.insert(Dragging);
-            entity_commands.remove_parent();
+            entity_commands.insert(Dragging {
+                last_parent: parent.get(),
+                last_index: 0,
+            });
+            entity_commands.set_parent(drag_container_q.single());
             return; // Can only drag one item at a time
         }
     }
@@ -165,35 +203,32 @@ fn start_dragging(
 fn stop_dragging(
     mut commands: Commands,
     mouse: Res<ButtonInput<MouseButton>>,
-    draggings_q: Query<Entity, With<Dragging>>,
+    draggings_q: Query<(Entity, &Dragging)>,
 ) {
     if !mouse.just_released(MouseButton::Left) {
         return;
     }
 
-    for entity in draggings_q.iter() {
-        let Some(mut entity_commands) = commands.get_entity(entity) else {
-            continue;
-        };
+    for (entity, dragging) in draggings_q.iter() {
+        let mut entity_commands = commands.entity(entity);
 
+        entity_commands.set_parent(dragging.last_parent);
         entity_commands.remove::<Dragging>();
     }
 }
 
-fn update_dragging(
-    mut draggings_q: Query<&mut Style, With<Dragging>>,
+fn update_drag_container(
+    mut drag_container_style_q: Query<&mut Style, With<DragContainer>>,
     windows_q: Query<&Window, With<PrimaryWindow>>,
 ) {
     let Some(position) = windows_q.single().cursor_position() else {
         return;
     };
 
-    for mut style in draggings_q.iter_mut() {
-        style.left = Val::Px(position.x - 8.);
-        style.top = Val::Px(position.y - 8.);
-    }
+    let mut style = drag_container_style_q.single_mut();
+    style.left = Val::Px(position.x - ITEM_UI_SIZE * 0.5);
+    style.top = Val::Px(position.y - ITEM_UI_SIZE * 0.5);
 }
-
 
 fn _spawn_ui_item(
     parent: &mut ChildBuilder,
@@ -220,4 +255,3 @@ fn _spawn_ui_item(
         RelativeCursorPosition::default(),
     ));
 }
-
