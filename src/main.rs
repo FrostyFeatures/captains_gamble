@@ -1,8 +1,8 @@
 mod assets;
+mod battle;
 mod dice;
 mod inventory;
 mod items;
-mod battle;
 
 use assets::GameSprites;
 use bevy::{prelude::*, window::WindowResolution};
@@ -62,7 +62,11 @@ fn init_rng(world: &mut World) {
     world.insert_non_send_resource(Rng(rand::thread_rng()));
 }
 
-fn setup_scene(mut commands: Commands, game_sprites: Res<GameSprites>, mut next_app_state: ResMut<NextState<AppState>>,) {
+fn setup_scene(
+    mut commands: Commands,
+    game_sprites: Res<GameSprites>,
+    mut next_app_state: ResMut<NextState<AppState>>,
+) {
     commands.spawn(Camera2dBundle {
         ..Default::default()
     });

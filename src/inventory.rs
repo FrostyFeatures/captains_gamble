@@ -17,7 +17,10 @@ pub struct InventoryPlugin;
 impl Plugin for InventoryPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(ItemPlugin)
-            .add_systems(OnEnter(AppState::GameStart), (setup_inventory, open_gui).chain())
+            .add_systems(
+                OnEnter(AppState::GameStart),
+                (setup_inventory, open_gui).chain(),
+            )
             .add_systems(
                 Update,
                 (
@@ -259,10 +262,7 @@ fn update_drag_container(
     style.top = Val::Px(position.y - ITEM_UI_SIZE * 0.5);
 }
 
-fn sync_scroll_items(
-    mut scroll: ResMut<Scroll>,
-    scroll_ui_q: Query<&Children, With<ScrollUI>>,
-) {
+fn sync_scroll_items(mut scroll: ResMut<Scroll>, scroll_ui_q: Query<&Children, With<ScrollUI>>) {
     let Ok(children) = scroll_ui_q.get_single() else {
         return;
     };

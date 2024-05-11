@@ -49,7 +49,7 @@ impl Default for WoodenSwordBundle {
             damage: Damage {
                 base: WOODEN_SWORD_BASE_DAMAGE,
                 ..default()
-            }
+            },
         }
     }
 }
@@ -69,7 +69,7 @@ impl Default for IronSwordBundle {
             damage: Damage {
                 base: IRON_SWORD_BASE_DAMAGE,
                 ..default()
-            }
+            },
         }
     }
 }
@@ -94,7 +94,7 @@ impl Default for BlessedSwordBundle {
             jolly: Jolly {
                 base: BLESSED_SWORD_BASE_JOLLY,
                 ..default()
-            }
+            },
         }
     }
 }

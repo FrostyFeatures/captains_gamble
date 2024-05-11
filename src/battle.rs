@@ -4,8 +4,7 @@ pub struct BattlePlugin;
 
 impl Plugin for BattlePlugin {
     fn build(&self, app: &mut App) {
-        app
-            .insert_state(BattleState::default())
+        app.insert_state(BattleState::default())
             .add_systems(OnEnter(BattleState::Start), setup_battle);
     }
 }
@@ -19,8 +18,4 @@ enum BattleState {
     End,
 }
 
-fn setup_battle(
-    mut commands: Commands,
-) {
-
-}
+fn setup_battle(mut commands: Commands) {}
