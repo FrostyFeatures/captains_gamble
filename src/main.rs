@@ -2,6 +2,7 @@ mod assets;
 mod dice;
 mod inventory;
 mod items;
+mod battle;
 
 use assets::GameSprites;
 use bevy::{prelude::*, window::WindowResolution};
@@ -35,11 +36,11 @@ fn main() {
         .add_plugins(InventoryPlugin)
         .add_loading_state(
             LoadingState::new(AppState::LoadingAssets)
-                .continue_to_state(AppState::Game)
+                .continue_to_state(AppState::InitGame)
                 .load_collection::<GameSprites>(),
         )
         .add_systems(PreStartup, init_rng)
-        .add_systems(OnEnter(AppState::Game), setup_scene)
+        .add_systems(OnEnter(AppState::InitGame), setup_scene)
         .run();
 }
 
@@ -47,7 +48,12 @@ fn main() {
 enum AppState {
     #[default]
     LoadingAssets,
-    Game,
+    InitGame,
+    GameStart,
+    PlunderBooty,
+    OrganizeInventory,
+    Battling,
+    GameOver,
 }
 
 pub struct Rng(ThreadRng);
@@ -56,7 +62,7 @@ fn init_rng(world: &mut World) {
     world.insert_non_send_resource(Rng(rand::thread_rng()));
 }
 
-fn setup_scene(mut commands: Commands, game_sprites: Res<GameSprites>) {
+fn setup_scene(mut commands: Commands, game_sprites: Res<GameSprites>, mut next_app_state: ResMut<NextState<AppState>>,) {
     commands.spawn(Camera2dBundle {
         ..Default::default()
     });
@@ -79,4 +85,6 @@ fn setup_scene(mut commands: Commands, game_sprites: Res<GameSprites>) {
                 ..default()
             });
         });
+
+    next_app_state.set(AppState::GameStart);
 }

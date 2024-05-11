@@ -17,7 +17,7 @@ pub struct InventoryPlugin;
 impl Plugin for InventoryPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(ItemPlugin)
-            .add_systems(OnEnter(AppState::Game), (setup_inventory, open_gui).chain())
+            .add_systems(OnEnter(AppState::GameStart), (setup_inventory, open_gui).chain())
             .add_systems(
                 Update,
                 (
@@ -27,7 +27,7 @@ impl Plugin for InventoryPlugin {
                     sync_scroll_items,
                 )
                     .chain()
-                    .run_if(in_state(AppState::Game)),
+                    .run_if(in_state(AppState::GameStart)),
             );
     }
 }
@@ -37,7 +37,7 @@ const SCROLL_SIZE: usize = 12;
 
 const ITEM_UI_SIZE: f32 = 16.;
 
-#[derive(Component, Default)]
+#[derive(Resource, Default)]
 struct Scroll(VecDeque<Entity>);
 
 #[derive(Component)]
@@ -81,63 +81,19 @@ fn setup_inventory(mut commands: Commands) {
     scroll.0.push_back(
         commands
             .spawn(Sword {
-                r#type: SwordType::Magic,
+                r#type: SwordType::Blessed,
             })
             .id(),
     );
-    scroll.0.push_back(
-        commands
-            .spawn(Sword {
-                r#type: SwordType::Wooden,
-            })
-            .id(),
-    );
-    scroll.0.push_back(
-        commands
-            .spawn(Sword {
-                r#type: SwordType::Iron,
-            })
-            .id(),
-    );
-    scroll.0.push_back(
-        commands
-            .spawn(Sword {
-                r#type: SwordType::Magic,
-            })
-            .id(),
-    );
-    scroll.0.push_back(
-        commands
-            .spawn(Sword {
-                r#type: SwordType::Wooden,
-            })
-            .id(),
-    );
-    scroll.0.push_back(
-        commands
-            .spawn(Sword {
-                r#type: SwordType::Iron,
-            })
-            .id(),
-    );
-    scroll.0.push_back(
-        commands
-            .spawn(Sword {
-                r#type: SwordType::Magic,
-            })
-            .id(),
-    );
-    commands.spawn(scroll);
+    commands.insert_resource(scroll);
 }
 
 fn open_gui(
     mut commands: Commands,
+    scroll: Res<Scroll>,
     game_sprites: Res<GameSprites>,
-    scroll_q: Query<&Scroll>,
     items_q: Query<One<&dyn Item>>,
 ) {
-    let scroll = scroll_q.single();
-
     let scroll_image = commands
         .spawn((
             ImageBundle {
@@ -304,17 +260,13 @@ fn update_drag_container(
 }
 
 fn sync_scroll_items(
-    mut scroll_q: Query<&mut Scroll>,
+    mut scroll: ResMut<Scroll>,
     scroll_ui_q: Query<&Children, With<ScrollUI>>,
 ) {
     let Ok(children) = scroll_ui_q.get_single() else {
         return;
     };
-    let Ok(mut scroll) = scroll_q.get_single_mut() else {
-        return;
-    };
     scroll.0 = children.iter().map(|&c| c).collect();
-    // println!("{:?}", scroll.0);
 }
 
 fn _spawn_ui_item(
