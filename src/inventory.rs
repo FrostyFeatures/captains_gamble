@@ -6,11 +6,13 @@ use bevy_trait_query::One;
 use crate::{
     assets::GameSprites,
     items::{
-        sword::{Sword, SwordType},
+        sword::{BlessedSwordBundle, IronSwordBundle, Sword, SwordType, WoodenSwordBundle},
         Item, ItemPlugin,
     },
     AppState,
 };
+
+pub const SCROLL_SIZE: usize = 12;
 
 pub struct InventoryPlugin;
 
@@ -36,18 +38,16 @@ impl Plugin for InventoryPlugin {
 }
 
 const SCROLL_UI_WIDTH: f32 = 245.;
-const SCROLL_SIZE: usize = 12;
-
 const ITEM_UI_SIZE: f32 = 16.;
 
 #[derive(Resource, Default)]
-struct Scroll(VecDeque<Entity>);
+pub struct Scroll(pub VecDeque<Entity>);
 
 #[derive(Component)]
 struct InventoryUI;
 
 #[derive(Component)]
-struct ScrollUI;
+pub struct ScrollUI;
 
 #[derive(Component)]
 struct ItemUI(Entity);
@@ -67,27 +67,16 @@ struct Dragging {
 fn setup_inventory(mut commands: Commands) {
     let mut scroll = Scroll::default();
 
-    scroll.0.push_back(
-        commands
-            .spawn(Sword {
-                r#type: SwordType::Wooden,
-            })
-            .id(),
-    );
-    scroll.0.push_back(
-        commands
-            .spawn(Sword {
-                r#type: SwordType::Iron,
-            })
-            .id(),
-    );
-    scroll.0.push_back(
-        commands
-            .spawn(Sword {
-                r#type: SwordType::Blessed,
-            })
-            .id(),
-    );
+    scroll
+        .0
+        .push_back(commands.spawn(WoodenSwordBundle::default()).id());
+    scroll
+        .0
+        .push_back(commands.spawn(IronSwordBundle::default()).id());
+    scroll
+        .0
+        .push_back(commands.spawn(BlessedSwordBundle::default()).id());
+
     commands.insert_resource(scroll);
 }
 
@@ -262,11 +251,18 @@ fn update_drag_container(
     style.top = Val::Px(position.y - ITEM_UI_SIZE * 0.5);
 }
 
-fn sync_scroll_items(mut scroll: ResMut<Scroll>, scroll_ui_q: Query<&Children, With<ScrollUI>>) {
+fn sync_scroll_items(
+    mut scroll: ResMut<Scroll>,
+    scroll_ui_q: Query<&Children, With<ScrollUI>>,
+    item_ui_q: Query<&ItemUI>,
+) {
     let Ok(children) = scroll_ui_q.get_single() else {
         return;
     };
-    scroll.0 = children.iter().map(|&c| c).collect();
+    scroll.0 = children
+        .iter()
+        .map(|&c| item_ui_q.get(c).unwrap().0)
+        .collect();
 }
 
 fn _spawn_ui_item(

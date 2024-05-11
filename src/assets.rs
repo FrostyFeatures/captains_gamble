@@ -1,6 +1,8 @@
 use bevy::prelude::*;
 use bevy_asset_loader::asset_collection::AssetCollection;
 
+pub const ICON_INDEX_SCROLL_MARKER: usize = 56;
+
 #[derive(AssetCollection, Resource)]
 pub struct GameSprites {
     #[asset(path = "sprites/background.png")]

@@ -1,15 +1,20 @@
 mod assets;
 mod battle;
+mod common;
 mod dice;
+mod enemy;
 mod inventory;
 mod items;
+mod player;
 
 use assets::GameSprites;
+use battle::BattlePlugin;
 use bevy::{prelude::*, window::WindowResolution};
 use bevy_asset_loader::loading_state::{
     config::ConfigureLoadingState, LoadingState, LoadingStateAppExt,
 };
 use inventory::InventoryPlugin;
+use player::PlayerPlugin;
 use rand::rngs::ThreadRng;
 
 const GAME_WIDTH: f32 = 320.;
@@ -33,7 +38,9 @@ fn main() {
                 })
                 .set(ImagePlugin::default_nearest()),
         )
+        .add_plugins(PlayerPlugin)
         .add_plugins(InventoryPlugin)
+        .add_plugins(BattlePlugin)
         .add_loading_state(
             LoadingState::new(AppState::LoadingAssets)
                 .continue_to_state(AppState::InitGame)
@@ -41,6 +48,7 @@ fn main() {
         )
         .add_systems(PreStartup, init_rng)
         .add_systems(OnEnter(AppState::InitGame), setup_scene)
+        .add_systems(Update, start_battle)
         .run();
 }
 
@@ -91,4 +99,13 @@ fn setup_scene(
         });
 
     next_app_state.set(AppState::GameStart);
+}
+
+fn start_battle(
+    mut next_app_state: ResMut<NextState<AppState>>,
+    key_codes: Res<ButtonInput<KeyCode>>,
+) {
+    if key_codes.just_pressed(KeyCode::Space) {
+        next_app_state.set(AppState::Battling);
+    }
 }
