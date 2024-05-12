@@ -5,15 +5,17 @@ mod dice;
 mod enemy;
 mod inventory;
 mod items;
+mod log;
 mod player;
 
-use assets::GameSprites;
+use assets::{GameFonts, GameSprites};
 use battle::BattlePlugin;
 use bevy::{prelude::*, window::WindowResolution};
 use bevy_asset_loader::loading_state::{
     config::ConfigureLoadingState, LoadingState, LoadingStateAppExt,
 };
 use inventory::InventoryPlugin;
+use log::BattleLogPlugin;
 use player::PlayerPlugin;
 use rand::rngs::ThreadRng;
 
@@ -41,10 +43,12 @@ fn main() {
         .add_plugins(PlayerPlugin)
         .add_plugins(InventoryPlugin)
         .add_plugins(BattlePlugin)
+        .add_plugins(BattleLogPlugin)
         .add_loading_state(
             LoadingState::new(AppState::LoadingAssets)
                 .continue_to_state(AppState::InitGame)
-                .load_collection::<GameSprites>(),
+                .load_collection::<GameSprites>()
+                .load_collection::<GameFonts>(),
         )
         .add_systems(PreStartup, init_rng)
         .add_systems(OnEnter(AppState::InitGame), setup_scene)

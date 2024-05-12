@@ -20,3 +20,9 @@ pub struct GameSprites {
     #[asset(path = "sprites/items_tile_sheet.png")]
     pub items_tile_sheet: Handle<Image>,
 }
+
+#[derive(AssetCollection, Resource)]
+pub struct GameFonts {
+    #[asset(path = "fonts/minimal5x7.ttf")]
+    pub font: Handle<Font>,
+}

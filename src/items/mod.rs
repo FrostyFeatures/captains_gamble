@@ -1,7 +1,8 @@
 use bevy::prelude::*;
 
 use crate::{
-    battle::UseItem, common::Hp, enemy::Enemy, items::sword::Sword, player::Player, AppState,
+    battle::UseItem, common::Hp, enemy::Enemy, items::sword::Sword, log::LogMessageEvent,
+    player::Player, AppState,
 };
 pub mod sword;
 
@@ -41,6 +42,7 @@ impl Damage {
 }
 
 fn handle_damage_use(
+    mut log_message_er: EventWriter<LogMessageEvent>,
     mut use_item_ev: EventReader<UseItem>,
     mut enemy_hp_q: Query<&mut Hp, With<Enemy>>,
     damage_q: Query<&Damage>,
@@ -52,7 +54,10 @@ fn handle_damage_use(
         let Ok(damage) = damage_q.get(item_e.0) else {
             continue;
         };
-        println!("Dealing {} damange to Enemy", damage.damage());
+        log_message_er.send(LogMessageEvent(format!(
+            "Dealt {} damage!",
+            damage.damage()
+        )));
         enemy_hp.decrease(damage.damage());
     }
 }
@@ -70,6 +75,7 @@ impl Jolly {
 }
 
 fn handle_jolly_use(
+    mut log_message_er: EventWriter<LogMessageEvent>,
     mut use_item_ev: EventReader<UseItem>,
     mut player_hp_q: Query<&mut Hp, With<Player>>,
     jolly_q: Query<&Jolly>,
@@ -81,7 +87,7 @@ fn handle_jolly_use(
         let Ok(jolly) = jolly_q.get(item_e.0) else {
             continue;
         };
-        println!("Healing {} health to Player", jolly.jolly());
+        log_message_er.send(LogMessageEvent(format!("Healed {} health!", jolly.jolly())));
         player_hp.increase(jolly.jolly());
     }
 }
