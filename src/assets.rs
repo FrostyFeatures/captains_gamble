@@ -14,6 +14,9 @@ pub struct GameSprites {
     #[asset(path = "sprites/inventory_scroll.png")]
     pub inventory_scroll: Handle<Image>,
 
+    #[asset(path = "sprites/loot_scroll.png")]
+    pub loot_scroll: Handle<Image>,
+
     #[asset(texture_atlas_layout(tile_size_x = 16., tile_size_y = 16., columns = 8, rows = 8))]
     pub items_tile_layout: Handle<TextureAtlasLayout>,
 

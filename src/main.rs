@@ -7,6 +7,7 @@ mod inventory;
 mod items;
 mod log;
 mod player;
+mod ui;
 
 use assets::{GameFonts, GameSprites};
 use battle::BattlePlugin;
@@ -15,12 +16,14 @@ use bevy_asset_loader::loading_state::{
     config::ConfigureLoadingState, LoadingState, LoadingStateAppExt,
 };
 use inventory::InventoryPlugin;
+use items::ItemPlugin;
 use log::BattleLogPlugin;
 use player::PlayerPlugin;
 use rand::rngs::ThreadRng;
+use ui::UIPlugin;
 
 const GAME_WIDTH: f32 = 320.;
-const GAME_HEIGHT: f32 = 180.;
+// const GAME_HEIGHT: f32 = 180.;
 
 const MONITOR_WIDTH: f32 = 1920.;
 const MONITOR_HEIGHT: f32 = 1080.;
@@ -40,7 +43,9 @@ fn main() {
                 })
                 .set(ImagePlugin::default_nearest()),
         )
+        .add_plugins(UIPlugin)
         .add_plugins(PlayerPlugin)
+        .add_plugins(ItemPlugin)
         .add_plugins(InventoryPlugin)
         .add_plugins(BattlePlugin)
         .add_plugins(BattleLogPlugin)
@@ -52,7 +57,11 @@ fn main() {
         )
         .add_systems(PreStartup, init_rng)
         .add_systems(OnEnter(AppState::InitGame), setup_scene)
-        .add_systems(Update, start_battle)
+        .add_systems(Update, start_game.run_if(in_state(AppState::GameStart)))
+        .add_systems(
+            Update,
+            start_battle.run_if(in_state(AppState::OrganizeInventory)),
+        )
         .run();
 }
 
@@ -62,7 +71,6 @@ enum AppState {
     LoadingAssets,
     InitGame,
     GameStart,
-    PlunderBooty,
     OrganizeInventory,
     Battling,
     GameOver,
@@ -103,6 +111,15 @@ fn setup_scene(
         });
 
     next_app_state.set(AppState::GameStart);
+}
+
+fn start_game(
+    mut next_app_state: ResMut<NextState<AppState>>,
+    key_codes: Res<ButtonInput<KeyCode>>,
+) {
+    if key_codes.just_pressed(KeyCode::Space) {
+        next_app_state.set(AppState::OrganizeInventory);
+    }
 }
 
 fn start_battle(

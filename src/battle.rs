@@ -2,8 +2,10 @@ use bevy::prelude::*;
 
 use crate::{
     assets::{GameSprites, ICON_INDEX_SCROLL_MARKER},
+    common::Hp,
     enemy::{Enemy, EnemyBundle},
-    inventory::{Scroll, ScrollUI},
+    inventory::{InventoryScroll, InventoryScrollUI},
+    player::Player,
     AppState,
 };
 
@@ -25,6 +27,7 @@ impl Plugin for BattlePlugin {
                     update_scroll_marker_pos,
                     update_scroll_marker_ui_pos,
                     animate_scroll_marker,
+                    check_battle_end,
                 )
                     .chain()
                     .run_if(in_state(AppState::Battling)),
@@ -56,7 +59,7 @@ struct ScrollMarkerBundle {
 fn setup_battle(
     mut commands: Commands,
     game_sprites: Res<GameSprites>,
-    scroll_ui_q: Query<Entity, With<ScrollUI>>,
+    scroll_ui_q: Query<Entity, With<InventoryScrollUI>>,
 ) {
     commands.spawn(EnemyBundle::default());
 
@@ -85,16 +88,32 @@ fn setup_battle(
 fn player_turn_use_item(
     mut use_item_ew: EventWriter<UseItem>,
     key_codes: Res<ButtonInput<KeyCode>>,
-    scroll: Res<Scroll>,
+    scroll: Res<InventoryScroll>,
     scroll_marker_q: Query<&ScrollMarker>,
 ) {
     if key_codes.just_pressed(KeyCode::Space) {
+        println!("{:?}", scroll.0);
         if let Ok(scroll_marker) = scroll_marker_q.get_single() {
             let Some(entity) = scroll.0.get(scroll_marker.0) else {
                 return;
             };
             use_item_ew.send(UseItem(*entity));
         }
+    }
+}
+
+fn check_battle_end(
+    // mut log_message_ew: EventWriter<LogMessageEvent>,
+    mut next_app_state: ResMut<NextState<AppState>>,
+    player_hp_q: Query<&Hp, With<Player>>,
+    enemy_hp_q: Query<&Hp, With<Enemy>>,
+) {
+    if player_hp_q.single().is_dead() {
+        next_app_state.set(AppState::GameOver);
+    }
+
+    if enemy_hp_q.single().is_dead() {
+        next_app_state.set(AppState::OrganizeInventory);
     }
 }
 
@@ -111,7 +130,7 @@ fn animate_scroll_marker(
 fn update_scroll_marker_pos(
     mut use_item_er: EventReader<UseItem>,
     mut scroll_marker_q: Query<&mut ScrollMarker>,
-    scroll: Res<Scroll>,
+    scroll: Res<InventoryScroll>,
 ) {
     let Ok(mut scroll_marker) = scroll_marker_q.get_single_mut() else {
         return;
@@ -130,8 +149,16 @@ fn update_scroll_marker_ui_pos(
     }
 }
 
-fn cleanup_battle(mut commands: Commands, enemies_q: Query<Entity, With<Enemy>>) {
-    for enemy_e in enemies_q.iter() {
-        commands.get_entity(enemy_e).map(|e| e.despawn_recursive());
+fn cleanup_battle(
+    mut commands: Commands,
+    enemies_q: Query<Entity, With<Enemy>>,
+    scroll_marker_q: Query<Entity, With<ScrollMarker>>,
+) {
+    for entity in enemies_q.iter() {
+        commands.get_entity(entity).map(|e| e.despawn_recursive());
+    }
+
+    for entity in scroll_marker_q.iter() {
+        commands.get_entity(entity).map(|e| e.despawn_recursive());
     }
 }
