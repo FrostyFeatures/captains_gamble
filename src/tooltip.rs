@@ -129,8 +129,8 @@ fn update_tooltip_positions(
     };
 
     for mut style in tooltip_root_q.iter_mut() {
-        style.left = Val::Px(position.x);
-        style.top = Val::Px(position.y);
+        style.left = Val::Px(position.x.floor());
+        style.top = Val::Px(position.y.floor());
     }
 }
 
