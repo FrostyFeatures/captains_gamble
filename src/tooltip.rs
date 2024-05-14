@@ -6,7 +6,7 @@ use crate::{
     AppState,
 };
 
-const FONT_SIZE: f32 = 6.;
+const FONT_SIZE: f32 = 4.;
 const FONT_COLOR: Color = Color::WHITE;
 
 pub struct TooltipPlugin;
@@ -61,6 +61,7 @@ impl Tooltip {
                         flex_direction: FlexDirection::Column,
                         padding: UiRect::all(Val::Px(2.)),
                         justify_content: JustifyContent::Start,
+                        row_gap: Val::Px(2.),
                         ..default()
                     },
                     ..default()
