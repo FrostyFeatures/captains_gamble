@@ -18,10 +18,6 @@ impl Hp {
         self.current <= 0
     }
 
-    pub fn is_alive(&self) -> bool {
-        !self.is_dead()
-    }
-
     pub fn increase(&mut self, amount: i32) {
         self.current = self.max.min(self.current + amount);
     }

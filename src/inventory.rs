@@ -1,7 +1,4 @@
-// use std::{collections::VecDeque, ops::Deref, rc};
-
 use bevy::{prelude::*, ui::RelativeCursorPosition, window::PrimaryWindow};
-use bevy_trait_query::One;
 
 use crate::{
     assets::GameSprites,
@@ -21,48 +18,24 @@ pub struct InventoryPlugin;
 
 impl Plugin for InventoryPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(
-            OnEnter(AppState::GameStart),
-            (
-                // setup_inventory,
-                open_gui
+        app.add_systems(OnEnter(AppState::GameStart), (open_gui).chain())
+            .add_systems(
+                OnEnter(AppState::OrganizeInventory),
+                (spawn_loot_scroll_ui, spawn_loot).chain(),
             )
-                .chain(),
-        )
-        .add_systems(
-            OnEnter(AppState::OrganizeInventory),
-            (spawn_loot_scroll_ui, spawn_loot).chain(),
-        )
-        .add_systems(OnExit(AppState::OrganizeInventory), destroy_loot_scroll_ui)
-        .add_systems(
-            Update,
-            (
-                start_dragging,
-                stop_dragging,
-                update_drag_container,
-                // sync_scroll_items,
-            )
-                .chain()
-                .run_if(in_state(AppState::OrganizeInventory)),
-        );
-        // .add_systems(
-        //     Update,
-        //     (sync_loot_items,)
-        //         .chain()
-        //         .run_if(in_state(AppState::OrganizeInventory)),
-        // );
+            .add_systems(OnExit(AppState::OrganizeInventory), destroy_loot_scroll_ui)
+            .add_systems(
+                Update,
+                (start_dragging, stop_dragging, update_drag_container)
+                    .chain()
+                    .run_if(in_state(AppState::OrganizeInventory)),
+            );
     }
 }
 
 const INVENTORY_SCROLL_UI_WIDTH: f32 = 245.;
 const LOOT_SCROLL_UI_WIDTH: f32 = 105.;
 const ITEM_UI_SIZE: f32 = 16.;
-
-// #[derive(Resource, Default)]
-// pub struct InventoryScroll(pub VecDeque<Entity>);
-//
-// #[derive(Resource, Default)]
-// pub struct LootScroll(pub VecDeque<Entity>);
 
 #[derive(Component)]
 struct InventoryUI;
@@ -93,17 +66,11 @@ struct Dragging {
     last_index: usize,
 }
 
-// fn setup_inventory(mut commands: Commands) {
-//     commands.insert_resource(InventoryScroll::default());
-// }
-
 fn spawn_loot(
     mut commands: Commands,
     game_sprites: Res<GameSprites>,
     loot_scroll_q: Query<Entity, With<LootScrollUI>>,
 ) {
-    // let mut loot_scroll = LootScroll::default();
-
     commands
         .entity(loot_scroll_q.single())
         .with_children(|parent| {
@@ -111,20 +78,16 @@ fn spawn_loot(
                 parent,
                 &game_sprites,
                 &Sword {
-                    r#type: SwordType::Wooden,
+                    r#type: SwordType::Blessed,
                 },
             );
         });
-
-    // commands.insert_resource(loot_scroll);
 }
 
 fn open_gui(
     mut commands: Commands,
     root_ui_node_q: Query<Entity, With<RootUINode>>,
-    // scroll: Res<InventoryScroll>,
     game_sprites: Res<GameSprites>,
-    // items_q: Query<One<&dyn Item>>,
 ) {
     let scroll_image = commands
         .spawn((
@@ -178,14 +141,6 @@ fn open_gui(
         ))
         .id();
 
-    // commands.entity(scroll_image).with_children(|mut parent| {
-    //     for &item_entity in scroll.0.iter() {
-    //         let Ok(item) = items_q.get(item_entity) else {
-    //             continue;
-    //         };
-    //         _spawn_ui_item(&mut parent, &game_sprites, item.deref(), item_entity);
-    //     }
-    // });
     commands.entity(background_image).add_child(scroll_image);
     commands
         .entity(root_ui_node_q.single())
@@ -208,9 +163,7 @@ fn open_gui(
 fn spawn_loot_scroll_ui(
     mut commands: Commands,
     game_sprites: Res<GameSprites>,
-    // loot_scroll: Res<LootScroll>,
     inventory_ui_q: Query<Entity, With<InventoryUI>>,
-    items_q: Query<One<&dyn Item>>,
 ) {
     let loot_scroll_ui = commands
         .spawn((
@@ -240,14 +193,6 @@ fn spawn_loot_scroll_ui(
         ))
         .id();
 
-    // commands.entity(loot_scroll_ui).with_children(|mut parent| {
-    //     for &item_entity in loot_scroll.0.iter() {
-    //         let Ok(item) = items_q.get(item_entity) else {
-    //             continue;
-    //         };
-    //         _spawn_ui_item(&mut parent, &game_sprites, item.deref(), item_entity);
-    //     }
-    // });
     commands
         .entity(inventory_ui_q.single())
         .add_child(loot_scroll_ui);
@@ -267,12 +212,17 @@ fn start_dragging(
     mouse: Res<ButtonInput<MouseButton>>,
     scroll_ui_children_q: Query<&Children, With<ScrollUI>>,
     drag_container_q: Query<Entity, With<DragContainer>>,
-    draggables_q: Query<
-        (Entity, &Parent, &RelativeCursorPosition),
+    mut draggables_q: Query<
+        (
+            Entity,
+            &Parent,
+            &RelativeCursorPosition,
+            Option<&mut Tooltipable>,
+        ),
         (With<Draggable>, Without<Dragging>),
     >,
 ) {
-    for (entity, parent, relative_cursor_position) in draggables_q.iter() {
+    for (entity, parent, relative_cursor_position, tooltipable) in draggables_q.iter_mut() {
         let Some(mut entity_commands) = commands.get_entity(entity) else {
             continue;
         };
@@ -289,6 +239,9 @@ fn start_dragging(
                     index = i % children.len();
                 }
             }
+            if let Some(mut t) = tooltipable {
+                *t = Tooltipable::Disabled;
+            }
             entity_commands.insert(Dragging {
                 last_parent: parent.get(),
                 last_index: index,
@@ -302,7 +255,7 @@ fn start_dragging(
 fn stop_dragging(
     mut commands: Commands,
     mouse: Res<ButtonInput<MouseButton>>,
-    draggings_q: Query<(Entity, &Dragging)>,
+    mut draggings_q: Query<(Entity, &Dragging, Option<&mut Tooltipable>)>,
     scroll_ui_q: Query<(
         Entity,
         &RelativeCursorPosition,
@@ -314,7 +267,7 @@ fn stop_dragging(
         return;
     }
 
-    for (drag_entity, dragging) in draggings_q.iter() {
+    for (drag_entity, dragging, tooltipable) in draggings_q.iter_mut() {
         let mut index = dragging.last_index;
         let mut parent = dragging.last_parent;
         if let Some((parent_e, relative_cursor_position, scroll_ui, children)) = scroll_ui_q
@@ -331,6 +284,9 @@ fn stop_dragging(
             }
         }
         let mut parent_commands = commands.entity(parent);
+        if let Some(mut t) = tooltipable {
+            *t = Tooltipable::Enabled;
+        }
         parent_commands.insert_children(index, &[drag_entity]);
         commands.entity(drag_entity).remove::<Dragging>();
     }
@@ -349,32 +305,6 @@ fn update_drag_container(
     style.top = Val::Px(position.y - ITEM_UI_SIZE * 0.5);
 }
 
-// fn sync_scroll_items(
-//     mut scroll: ResMut<InventoryScroll>,
-//     scroll_ui_q: Query<Option<&Children>, With<InventoryScrollUI>>,
-//     item_ui_q: Query<&ItemUI>,
-// ) {
-//     let Ok(children) = scroll_ui_q.get_single() else {
-//         return;
-//     };
-//     scroll.0 = children.map_or(VecDeque::new(), |c| {
-//         c.iter().map(|&c| item_ui_q.get(c).unwrap().0).collect()
-//     });
-// }
-//
-// fn sync_loot_items(
-//     mut scroll: ResMut<LootScroll>,
-//     scroll_ui_q: Query<Option<&Children>, With<LootScrollUI>>,
-//     item_ui_q: Query<&ItemUI>,
-// ) {
-//     let Ok(children) = scroll_ui_q.get_single() else {
-//         return;
-//     };
-//     scroll.0 = children.map_or(VecDeque::new(), |c| {
-//         c.iter().map(|&c| item_ui_q.get(c).unwrap().0).collect()
-//     });
-// }
-
 fn _spawn_ui_item(parent: &mut ChildBuilder, game_sprites: &GameSprites, item: &dyn Item) {
     let mut entity_commands = parent.spawn((
         AtlasImageBundle {
@@ -392,7 +322,7 @@ fn _spawn_ui_item(parent: &mut ChildBuilder, game_sprites: &GameSprites, item: &
         },
         Draggable,
         RelativeCursorPosition::default(),
-        Tooltipable,
+        Tooltipable::default(),
     ));
 
     item.add_bundle(&mut entity_commands);

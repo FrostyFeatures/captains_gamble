@@ -1,7 +1,6 @@
 mod assets;
 mod battle;
 mod common;
-mod dice;
 mod enemy;
 mod inventory;
 mod items;

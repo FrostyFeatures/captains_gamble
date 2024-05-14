@@ -1,5 +1,3 @@
-use std::char::MAX;
-
 use bevy::prelude::*;
 
 use crate::{assets::GameFonts, AppState};
@@ -75,7 +73,7 @@ fn cleanup_logs(mut commands: Commands, log_messages_q: Query<&Children, With<Lo
         .rev()
         .enumerate()
         .filter(|(i, _)| *i >= MAX_MESSAGES)
-        .for_each(|(i, e)| {
+        .for_each(|(_, e)| {
             commands.get_entity(*e).map(|e| e.despawn_recursive());
         })
 }

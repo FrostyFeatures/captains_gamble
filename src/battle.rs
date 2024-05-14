@@ -4,10 +4,7 @@ use crate::{
     assets::{GameSprites, ICON_INDEX_SCROLL_MARKER},
     common::Hp,
     enemy::{Enemy, EnemyBundle},
-    inventory::{
-        // InventoryScroll,
-        InventoryScrollUI,
-    },
+    inventory::InventoryScrollUI,
     player::Player,
     AppState,
 };
@@ -42,9 +39,6 @@ impl Plugin for BattlePlugin {
 enum BattleState {
     #[default]
     Start,
-    PlayerTurn,
-    EnemyTurn,
-    End,
 }
 
 #[derive(Event)]
@@ -105,7 +99,6 @@ fn player_turn_use_item(
 }
 
 fn check_battle_end(
-    // mut log_message_ew: EventWriter<LogMessageEvent>,
     mut next_app_state: ResMut<NextState<AppState>>,
     player_hp_q: Query<&Hp, With<Player>>,
     enemy_hp_q: Query<&Hp, With<Enemy>>,
