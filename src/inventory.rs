@@ -1,11 +1,15 @@
-use std::{collections::VecDeque, ops::Deref, rc};
+// use std::{collections::VecDeque, ops::Deref, rc};
 
 use bevy::{prelude::*, ui::RelativeCursorPosition, window::PrimaryWindow};
 use bevy_trait_query::One;
 
 use crate::{
     assets::GameSprites,
-    items::{sword::WoodenSwordBundle, Item},
+    items::{
+        sword::{Sword, SwordType},
+        Item,
+    },
+    tooltip::Tooltipable,
     ui::RootUINode,
     AppState,
 };
@@ -19,11 +23,15 @@ impl Plugin for InventoryPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             OnEnter(AppState::GameStart),
-            (setup_inventory, open_gui).chain(),
+            (
+                // setup_inventory,
+                open_gui
+            )
+                .chain(),
         )
         .add_systems(
             OnEnter(AppState::OrganizeInventory),
-            (spawn_loot, spawn_loot_scroll_ui).chain(),
+            (spawn_loot_scroll_ui, spawn_loot).chain(),
         )
         .add_systems(OnExit(AppState::OrganizeInventory), destroy_loot_scroll_ui)
         .add_systems(
@@ -32,17 +40,17 @@ impl Plugin for InventoryPlugin {
                 start_dragging,
                 stop_dragging,
                 update_drag_container,
-                sync_scroll_items,
+                // sync_scroll_items,
             )
                 .chain()
                 .run_if(in_state(AppState::OrganizeInventory)),
-        )
-        .add_systems(
-            Update,
-            (sync_loot_items,)
-                .chain()
-                .run_if(in_state(AppState::OrganizeInventory)),
         );
+        // .add_systems(
+        //     Update,
+        //     (sync_loot_items,)
+        //         .chain()
+        //         .run_if(in_state(AppState::OrganizeInventory)),
+        // );
     }
 }
 
@@ -50,11 +58,11 @@ const INVENTORY_SCROLL_UI_WIDTH: f32 = 245.;
 const LOOT_SCROLL_UI_WIDTH: f32 = 105.;
 const ITEM_UI_SIZE: f32 = 16.;
 
-#[derive(Resource, Default)]
-pub struct InventoryScroll(pub VecDeque<Entity>);
-
-#[derive(Resource, Default)]
-pub struct LootScroll(pub VecDeque<Entity>);
+// #[derive(Resource, Default)]
+// pub struct InventoryScroll(pub VecDeque<Entity>);
+//
+// #[derive(Resource, Default)]
+// pub struct LootScroll(pub VecDeque<Entity>);
 
 #[derive(Component)]
 struct InventoryUI;
@@ -85,26 +93,38 @@ struct Dragging {
     last_index: usize,
 }
 
-fn setup_inventory(mut commands: Commands) {
-    commands.insert_resource(InventoryScroll::default());
-}
+// fn setup_inventory(mut commands: Commands) {
+//     commands.insert_resource(InventoryScroll::default());
+// }
 
-fn spawn_loot(mut commands: Commands) {
-    let mut loot_scroll = LootScroll::default();
+fn spawn_loot(
+    mut commands: Commands,
+    game_sprites: Res<GameSprites>,
+    loot_scroll_q: Query<Entity, With<LootScrollUI>>,
+) {
+    // let mut loot_scroll = LootScroll::default();
 
-    loot_scroll
-        .0
-        .push_back(commands.spawn(WoodenSwordBundle::default()).id());
+    commands
+        .entity(loot_scroll_q.single())
+        .with_children(|parent| {
+            _spawn_ui_item(
+                parent,
+                &game_sprites,
+                &Sword {
+                    r#type: SwordType::Wooden,
+                },
+            );
+        });
 
-    commands.insert_resource(loot_scroll);
+    // commands.insert_resource(loot_scroll);
 }
 
 fn open_gui(
     mut commands: Commands,
     root_ui_node_q: Query<Entity, With<RootUINode>>,
-    scroll: Res<InventoryScroll>,
+    // scroll: Res<InventoryScroll>,
     game_sprites: Res<GameSprites>,
-    items_q: Query<One<&dyn Item>>,
+    // items_q: Query<One<&dyn Item>>,
 ) {
     let scroll_image = commands
         .spawn((
@@ -158,14 +178,14 @@ fn open_gui(
         ))
         .id();
 
-    commands.entity(scroll_image).with_children(|mut parent| {
-        for &item_entity in scroll.0.iter() {
-            let Ok(item) = items_q.get(item_entity) else {
-                continue;
-            };
-            _spawn_ui_item(&mut parent, &game_sprites, item.deref(), item_entity);
-        }
-    });
+    // commands.entity(scroll_image).with_children(|mut parent| {
+    //     for &item_entity in scroll.0.iter() {
+    //         let Ok(item) = items_q.get(item_entity) else {
+    //             continue;
+    //         };
+    //         _spawn_ui_item(&mut parent, &game_sprites, item.deref(), item_entity);
+    //     }
+    // });
     commands.entity(background_image).add_child(scroll_image);
     commands
         .entity(root_ui_node_q.single())
@@ -188,7 +208,7 @@ fn open_gui(
 fn spawn_loot_scroll_ui(
     mut commands: Commands,
     game_sprites: Res<GameSprites>,
-    loot_scroll: Res<LootScroll>,
+    // loot_scroll: Res<LootScroll>,
     inventory_ui_q: Query<Entity, With<InventoryUI>>,
     items_q: Query<One<&dyn Item>>,
 ) {
@@ -220,14 +240,14 @@ fn spawn_loot_scroll_ui(
         ))
         .id();
 
-    commands.entity(loot_scroll_ui).with_children(|mut parent| {
-        for &item_entity in loot_scroll.0.iter() {
-            let Ok(item) = items_q.get(item_entity) else {
-                continue;
-            };
-            _spawn_ui_item(&mut parent, &game_sprites, item.deref(), item_entity);
-        }
-    });
+    // commands.entity(loot_scroll_ui).with_children(|mut parent| {
+    //     for &item_entity in loot_scroll.0.iter() {
+    //         let Ok(item) = items_q.get(item_entity) else {
+    //             continue;
+    //         };
+    //         _spawn_ui_item(&mut parent, &game_sprites, item.deref(), item_entity);
+    //     }
+    // });
     commands
         .entity(inventory_ui_q.single())
         .add_child(loot_scroll_ui);
@@ -329,39 +349,34 @@ fn update_drag_container(
     style.top = Val::Px(position.y - ITEM_UI_SIZE * 0.5);
 }
 
-fn sync_scroll_items(
-    mut scroll: ResMut<InventoryScroll>,
-    scroll_ui_q: Query<Option<&Children>, With<InventoryScrollUI>>,
-    item_ui_q: Query<&ItemUI>,
-) {
-    let Ok(children) = scroll_ui_q.get_single() else {
-        return;
-    };
-    scroll.0 = children.map_or(VecDeque::new(), |c| {
-        c.iter().map(|&c| item_ui_q.get(c).unwrap().0).collect()
-    });
-}
+// fn sync_scroll_items(
+//     mut scroll: ResMut<InventoryScroll>,
+//     scroll_ui_q: Query<Option<&Children>, With<InventoryScrollUI>>,
+//     item_ui_q: Query<&ItemUI>,
+// ) {
+//     let Ok(children) = scroll_ui_q.get_single() else {
+//         return;
+//     };
+//     scroll.0 = children.map_or(VecDeque::new(), |c| {
+//         c.iter().map(|&c| item_ui_q.get(c).unwrap().0).collect()
+//     });
+// }
+//
+// fn sync_loot_items(
+//     mut scroll: ResMut<LootScroll>,
+//     scroll_ui_q: Query<Option<&Children>, With<LootScrollUI>>,
+//     item_ui_q: Query<&ItemUI>,
+// ) {
+//     let Ok(children) = scroll_ui_q.get_single() else {
+//         return;
+//     };
+//     scroll.0 = children.map_or(VecDeque::new(), |c| {
+//         c.iter().map(|&c| item_ui_q.get(c).unwrap().0).collect()
+//     });
+// }
 
-fn sync_loot_items(
-    mut scroll: ResMut<LootScroll>,
-    scroll_ui_q: Query<Option<&Children>, With<LootScrollUI>>,
-    item_ui_q: Query<&ItemUI>,
-) {
-    let Ok(children) = scroll_ui_q.get_single() else {
-        return;
-    };
-    scroll.0 = children.map_or(VecDeque::new(), |c| {
-        c.iter().map(|&c| item_ui_q.get(c).unwrap().0).collect()
-    });
-}
-
-fn _spawn_ui_item(
-    parent: &mut ChildBuilder,
-    game_sprites: &GameSprites,
-    item: &dyn Item,
-    item_entity: Entity,
-) {
-    parent.spawn((
+fn _spawn_ui_item(parent: &mut ChildBuilder, game_sprites: &GameSprites, item: &dyn Item) {
+    let mut entity_commands = parent.spawn((
         AtlasImageBundle {
             image: UiImage::new(game_sprites.items_tile_sheet.clone()),
             texture_atlas: TextureAtlas {
@@ -375,19 +390,10 @@ fn _spawn_ui_item(
             },
             ..default()
         },
-        ItemUI(item_entity),
         Draggable,
         RelativeCursorPosition::default(),
+        Tooltipable,
     ));
-}
 
-fn _spawn_empty_item_node(parent: &mut ChildBuilder) {
-    parent.spawn(NodeBundle {
-        style: Style {
-            width: Val::Px(16.),
-            height: Val::Px(16.),
-            ..default()
-        },
-        ..default()
-    });
+    item.add_bundle(&mut entity_commands);
 }

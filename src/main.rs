@@ -7,6 +7,7 @@ mod inventory;
 mod items;
 mod log;
 mod player;
+mod tooltip;
 mod ui;
 
 use assets::{GameFonts, GameSprites};
@@ -20,6 +21,7 @@ use items::ItemPlugin;
 use log::BattleLogPlugin;
 use player::PlayerPlugin;
 use rand::rngs::ThreadRng;
+use tooltip::TooltipPlugin;
 use ui::UIPlugin;
 
 const GAME_WIDTH: f32 = 320.;
@@ -49,6 +51,7 @@ fn main() {
         .add_plugins(InventoryPlugin)
         .add_plugins(BattlePlugin)
         .add_plugins(BattleLogPlugin)
+        .add_plugins(TooltipPlugin)
         .add_loading_state(
             LoadingState::new(AppState::LoadingAssets)
                 .continue_to_state(AppState::InitGame)

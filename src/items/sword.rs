@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{ecs::system::EntityCommands, prelude::*, scene::serde::ENTITY_FIELD_COMPONENTS};
 
 use super::{Damage, Item, Jolly};
 
@@ -32,10 +32,18 @@ impl Item for Sword {
     fn icon_id(&self) -> usize {
         self.r#type.icon_id()
     }
+
+    fn add_bundle(&self, entity_commands: &mut EntityCommands) {
+        match self.r#type {
+            SwordType::Wooden => entity_commands.insert(WoodenSwordBundle::default()),
+            SwordType::Iron => entity_commands.insert(IronSwordBundle::default()),
+            SwordType::Blessed => entity_commands.insert(BlessedSwordBundle::default()),
+        };
+    }
 }
 
 #[derive(Bundle)]
-pub struct WoodenSwordBundle {
+struct WoodenSwordBundle {
     sword: Sword,
     damage: Damage,
 }
@@ -55,7 +63,7 @@ impl Default for WoodenSwordBundle {
 }
 
 #[derive(Bundle)]
-pub struct IronSwordBundle {
+struct IronSwordBundle {
     sword: Sword,
     damage: Damage,
 }
@@ -75,7 +83,7 @@ impl Default for IronSwordBundle {
 }
 
 #[derive(Bundle)]
-pub struct BlessedSwordBundle {
+struct BlessedSwordBundle {
     sword: Sword,
     damage: Damage,
     jolly: Jolly,

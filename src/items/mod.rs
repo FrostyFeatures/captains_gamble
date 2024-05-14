@@ -1,8 +1,14 @@
-use bevy::prelude::*;
+use bevy::{ecs::system::EntityCommands, prelude::*};
 
 use crate::{
-    battle::UseItem, common::Hp, enemy::Enemy, items::sword::Sword, log::LogMessageEvent,
-    player::Player, AppState,
+    battle::UseItem,
+    common::Hp,
+    enemy::Enemy,
+    items::sword::Sword,
+    log::LogMessageEvent,
+    player::Player,
+    tooltip::{TooltipComponent, TooltipSection},
+    AppState,
 };
 pub mod sword;
 
@@ -24,6 +30,7 @@ impl Plugin for ItemPlugin {
 #[bevy_trait_query::queryable]
 pub trait Item {
     fn icon_id(&self) -> usize;
+    fn add_bundle(&self, entity_commands: &mut EntityCommands);
 }
 
 #[derive(Component, Default, Debug, Clone, Copy)]
@@ -38,6 +45,12 @@ pub struct Damage {
 impl Damage {
     pub fn damage(&self) -> i32 {
         self.base + self.modifiers.0
+    }
+}
+
+impl TooltipComponent for Damage {
+    fn get_tooltip_section(&self) -> TooltipSection {
+        TooltipSection(format!("Damage {}", self.damage()))
     }
 }
 
@@ -71,6 +84,12 @@ pub struct Jolly {
 impl Jolly {
     pub fn jolly(&self) -> i32 {
         self.base + self.modifiers.0
+    }
+}
+
+impl TooltipComponent for Jolly {
+    fn get_tooltip_section(&self) -> TooltipSection {
+        TooltipSection(format!("Jolly {}", self.base))
     }
 }
 

@@ -4,7 +4,10 @@ use crate::{
     assets::{GameSprites, ICON_INDEX_SCROLL_MARKER},
     common::Hp,
     enemy::{Enemy, EnemyBundle},
-    inventory::{InventoryScroll, InventoryScrollUI},
+    inventory::{
+        // InventoryScroll,
+        InventoryScrollUI,
+    },
     player::Player,
     AppState,
 };
@@ -59,7 +62,7 @@ struct ScrollMarkerBundle {
 fn setup_battle(
     mut commands: Commands,
     game_sprites: Res<GameSprites>,
-    scroll_ui_q: Query<Entity, With<InventoryScrollUI>>,
+    scroll_ui_q: Query<&Children, With<InventoryScrollUI>>,
 ) {
     commands.spawn(EnemyBundle::default());
 
@@ -82,19 +85,18 @@ fn setup_battle(
             },
             ..default()
         })
-        .set_parent(scroll_ui_q.single());
+        .set_parent(*scroll_ui_q.single().iter().next().unwrap());
 }
 
 fn player_turn_use_item(
     mut use_item_ew: EventWriter<UseItem>,
     key_codes: Res<ButtonInput<KeyCode>>,
-    scroll: Res<InventoryScroll>,
+    scroll_q: Query<&Children, With<InventoryScrollUI>>,
     scroll_marker_q: Query<&ScrollMarker>,
 ) {
     if key_codes.just_pressed(KeyCode::Space) {
-        println!("{:?}", scroll.0);
         if let Ok(scroll_marker) = scroll_marker_q.get_single() {
-            let Some(entity) = scroll.0.get(scroll_marker.0) else {
+            let Some(entity) = scroll_q.single().get(scroll_marker.0) else {
                 return;
             };
             use_item_ew.send(UseItem(*entity));
@@ -130,22 +132,26 @@ fn animate_scroll_marker(
 fn update_scroll_marker_pos(
     mut use_item_er: EventReader<UseItem>,
     mut scroll_marker_q: Query<&mut ScrollMarker>,
-    scroll: Res<InventoryScroll>,
+    scroll_q: Query<&Children, With<InventoryScrollUI>>,
 ) {
     let Ok(mut scroll_marker) = scroll_marker_q.get_single_mut() else {
         return;
     };
     for _ in use_item_er.read() {
-        scroll_marker.0 = (scroll_marker.0 + 1) % scroll.0.len();
+        scroll_marker.0 = (scroll_marker.0 + 1) % scroll_q.single().len();
     }
 }
 
 fn update_scroll_marker_ui_pos(
-    mut scroll_marker_q: Query<(&mut Style, &ScrollMarker), Changed<ScrollMarker>>,
+    mut commands: Commands,
+    scroll_marker_q: Query<(Entity, &ScrollMarker), Changed<ScrollMarker>>,
+    scroll_q: Query<&Children, With<InventoryScrollUI>>,
 ) {
-    for (mut style, scroll_marker) in scroll_marker_q.iter_mut() {
+    for (entity, scroll_marker) in scroll_marker_q.iter() {
         let index = scroll_marker.0;
-        style.left = Val::Px(index as f32 * 20.);
+        commands
+            .entity(entity)
+            .set_parent(*scroll_q.single().get(index).unwrap());
     }
 }
 
