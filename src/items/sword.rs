@@ -1,6 +1,10 @@
 use bevy::{ecs::system::EntityCommands, prelude::*};
 
-use super::{Damage, Item, Jolly, Squiffy};
+use super::{
+    abilities::{AbilityTarget, Damage, Heave, Jolly, Squiffy},
+    attributes::Pointy,
+    Item,
+};
 
 const WOODEN_SWORD_BASE_DAMAGE: i32 = 3;
 const IRON_SWORD_BASE_DAMAGE: i32 = 5;
@@ -51,6 +55,7 @@ impl Item for Sword {
 struct WoodenSwordBundle {
     sword: Sword,
     damage: Damage,
+    pointy: Pointy,
 }
 
 impl Default for WoodenSwordBundle {
@@ -63,6 +68,7 @@ impl Default for WoodenSwordBundle {
                 base: WOODEN_SWORD_BASE_DAMAGE,
                 ..default()
             },
+            pointy: Pointy,
         }
     }
 }
@@ -71,6 +77,7 @@ impl Default for WoodenSwordBundle {
 struct IronSwordBundle {
     sword: Sword,
     damage: Damage,
+    pointy: Pointy,
 }
 
 impl Default for IronSwordBundle {
@@ -83,6 +90,7 @@ impl Default for IronSwordBundle {
                 base: IRON_SWORD_BASE_DAMAGE,
                 ..default()
             },
+            pointy: Pointy,
         }
     }
 }
@@ -92,6 +100,8 @@ struct BlessedSwordBundle {
     sword: Sword,
     damage: Damage,
     jolly: Jolly,
+    heave: Heave,
+    pointy: Pointy,
 }
 
 impl Default for BlessedSwordBundle {
@@ -108,6 +118,12 @@ impl Default for BlessedSwordBundle {
                 base: BLESSED_SWORD_BASE_JOLLY,
                 ..default()
             },
+            heave: Heave {
+                base: 1,
+                target: AbilityTarget::AllNext,
+                ..default()
+            },
+            pointy: Pointy,
         }
     }
 }
@@ -117,6 +133,7 @@ struct CursedSwordBundle {
     sword: Sword,
     damage: Damage,
     squiffy: Squiffy,
+    pointy: Pointy,
 }
 
 impl Default for CursedSwordBundle {
@@ -133,6 +150,7 @@ impl Default for CursedSwordBundle {
                 base: CURSED_SWORD_BASE_SQUIFFY,
                 ..default()
             },
+            pointy: Pointy,
         }
     }
 }

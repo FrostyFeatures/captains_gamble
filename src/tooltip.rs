@@ -1,10 +1,6 @@
 use bevy::{prelude::*, ui::RelativeCursorPosition, window::PrimaryWindow};
 
-use crate::{
-    assets::GameFonts,
-    items::{Damage, Jolly, Squiffy},
-    AppState,
-};
+use crate::{assets::GameFonts, AppState};
 
 const FONT_SIZE: f32 = 4.;
 const FONT_COLOR: Color = Color::WHITE;
@@ -13,12 +9,6 @@ pub struct TooltipPlugin;
 
 impl Plugin for TooltipPlugin {
     fn build(&self, app: &mut App) {
-        use bevy_trait_query::RegisterExt;
-
-        app.register_component_as::<dyn TooltipComponent, Damage>();
-        app.register_component_as::<dyn TooltipComponent, Jolly>();
-        app.register_component_as::<dyn TooltipComponent, Squiffy>();
-
         app.add_systems(
             Update,
             (spawn_tooltips, update_tooltip_positions, destroy_tooltips)
