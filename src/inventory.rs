@@ -7,7 +7,7 @@ use crate::{
         Item,
     },
     tooltip::Tooltipable,
-    ui::RootUINode,
+    ui::{BottomCenterUI, TopInventoryUI},
     AppState,
 };
 
@@ -18,7 +18,7 @@ pub struct InventoryPlugin;
 
 impl Plugin for InventoryPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(AppState::GameStart), (open_gui).chain())
+        app.add_systems(OnEnter(AppState::GameStart), spawn_inventory_scroll)
             .add_systems(
                 OnEnter(AppState::OrganizeInventory),
                 (spawn_loot_scroll_ui, spawn_loot).chain(),
@@ -36,9 +36,6 @@ impl Plugin for InventoryPlugin {
 const INVENTORY_SCROLL_UI_WIDTH: f32 = 245.;
 const LOOT_SCROLL_UI_WIDTH: f32 = 105.;
 const ITEM_UI_SIZE: f32 = 16.;
-
-#[derive(Component)]
-struct InventoryUI;
 
 #[derive(Component)]
 struct ScrollUI {
@@ -78,15 +75,22 @@ fn spawn_loot(
                 parent,
                 &game_sprites,
                 &Sword {
+                    r#type: SwordType::Cursed,
+                },
+            );
+            _spawn_ui_item(
+                parent,
+                &game_sprites,
+                &Sword {
                     r#type: SwordType::Blessed,
                 },
             );
         });
 }
 
-fn open_gui(
+fn spawn_inventory_scroll(
     mut commands: Commands,
-    root_ui_node_q: Query<Entity, With<RootUINode>>,
+    top_inventory_ui_q: Query<Entity, With<TopInventoryUI>>,
     game_sprites: Res<GameSprites>,
 ) {
     let scroll_image = commands
@@ -103,6 +107,8 @@ fn open_gui(
                     justify_content: JustifyContent::FlexStart,
                     column_gap: Val::Px(4.),
                     width: Val::Px(INVENTORY_SCROLL_UI_WIDTH),
+                    min_width: Val::Px(INVENTORY_SCROLL_UI_WIDTH),
+                    max_width: Val::Px(INVENTORY_SCROLL_UI_WIDTH),
                     height: Val::Px(25.),
                     padding: UiRect {
                         left: Val::Px(2.),
@@ -117,34 +123,9 @@ fn open_gui(
         ))
         .id();
 
-    let background_image = commands
-        .spawn((
-            InventoryUI,
-            ImageBundle {
-                image: UiImage::new(game_sprites.inventory_bg.clone()),
-                style: Style {
-                    flex_direction: FlexDirection::Column,
-                    align_items: AlignItems::Center,
-                    justify_content: JustifyContent::Start,
-                    width: Val::Px(260.),
-                    height: Val::Px(74.),
-                    padding: UiRect {
-                        top: Val::Px(8.),
-                        bottom: Val::Px(8.),
-                        ..default()
-                    },
-                    row_gap: Val::Px(8.),
-                    ..default()
-                },
-                ..default()
-            },
-        ))
-        .id();
-
-    commands.entity(background_image).add_child(scroll_image);
     commands
-        .entity(root_ui_node_q.single())
-        .add_child(background_image);
+        .entity(top_inventory_ui_q.single())
+        .add_child(scroll_image);
 
     commands.spawn((
         DragContainer,
@@ -163,7 +144,7 @@ fn open_gui(
 fn spawn_loot_scroll_ui(
     mut commands: Commands,
     game_sprites: Res<GameSprites>,
-    inventory_ui_q: Query<Entity, With<InventoryUI>>,
+    bottom_inventory_ui_q: Query<Entity, With<BottomCenterUI>>,
 ) {
     let loot_scroll_ui = commands
         .spawn((
@@ -179,6 +160,8 @@ fn spawn_loot_scroll_ui(
                     justify_content: JustifyContent::Center,
                     column_gap: Val::Px(4.),
                     width: Val::Px(LOOT_SCROLL_UI_WIDTH),
+                    max_width: Val::Px(LOOT_SCROLL_UI_WIDTH),
+                    min_width: Val::Px(LOOT_SCROLL_UI_WIDTH),
                     height: Val::Px(25.),
                     padding: UiRect {
                         left: Val::Px(2.),
@@ -194,7 +177,7 @@ fn spawn_loot_scroll_ui(
         .id();
 
     commands
-        .entity(inventory_ui_q.single())
+        .entity(bottom_inventory_ui_q.single())
         .add_child(loot_scroll_ui);
 }
 

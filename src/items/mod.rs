@@ -20,7 +20,7 @@ impl Plugin for ItemPlugin {
 
         app.register_component_as::<dyn Item, Sword>().add_systems(
             Update,
-            (handle_damage_use, handle_jolly_use)
+            (handle_damage_use, handle_jolly_use, handle_squiffy_use)
                 .chain()
                 .run_if(in_state(AppState::Battling)),
         );
@@ -50,7 +50,10 @@ impl Damage {
 
 impl TooltipComponent for Damage {
     fn get_tooltip_section(&self) -> TooltipSection {
-        TooltipSection(format!("Damage {}", self.damage()))
+        TooltipSection {
+            text: format!("Damage {}", self.damage()),
+            index: 1,
+        }
     }
 }
 
@@ -89,7 +92,10 @@ impl Jolly {
 
 impl TooltipComponent for Jolly {
     fn get_tooltip_section(&self) -> TooltipSection {
-        TooltipSection(format!("Jolly {}", self.base))
+        TooltipSection {
+            text: format!("Jolly {}", self.jolly()),
+            index: 2,
+        }
     }
 }
 
@@ -108,5 +114,47 @@ fn handle_jolly_use(
         };
         log_message_er.send(LogMessageEvent(format!("Healed {} health!", jolly.jolly())));
         player_hp.increase(jolly.jolly());
+    }
+}
+
+#[derive(Component, Default, Debug, Clone, Copy)]
+pub struct Squiffy {
+    base: i32,
+    modifiers: AbilityModifier,
+}
+
+impl Squiffy {
+    pub fn squiffy(&self) -> i32 {
+        self.base + self.modifiers.0
+    }
+}
+
+impl TooltipComponent for Squiffy {
+    fn get_tooltip_section(&self) -> TooltipSection {
+        TooltipSection {
+            text: format!("Squiffy {}", self.squiffy()),
+            index: 3,
+        }
+    }
+}
+
+fn handle_squiffy_use(
+    mut log_message_er: EventWriter<LogMessageEvent>,
+    mut use_item_ev: EventReader<UseItem>,
+    mut player_hp_q: Query<&mut Hp, With<Player>>,
+    squiffy_q: Query<&Squiffy>,
+) {
+    let Ok(mut player_hp) = player_hp_q.get_single_mut() else {
+        return;
+    };
+    for item_e in use_item_ev.read() {
+        let Ok(squiffy) = squiffy_q.get(item_e.0) else {
+            continue;
+        };
+        log_message_er.send(LogMessageEvent(format!(
+            "Self-inflicted {} health!",
+            squiffy.squiffy()
+        )));
+        player_hp.decrease(squiffy.squiffy());
     }
 }

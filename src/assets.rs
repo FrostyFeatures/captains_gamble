@@ -22,6 +22,12 @@ pub struct GameSprites {
 
     #[asset(path = "sprites/items_tile_sheet.png")]
     pub items_tile_sheet: Handle<Image>,
+
+    #[asset(texture_atlas_layout(tile_size_x = 67., tile_size_y = 9., columns = 1, rows = 60))]
+    pub health_bar_layout: Handle<TextureAtlasLayout>,
+
+    #[asset(path = "sprites/health_bar.png")]
+    pub health_bar_sheet: Handle<Image>,
 }
 
 #[derive(AssetCollection, Resource)]

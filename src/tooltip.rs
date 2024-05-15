@@ -2,7 +2,7 @@ use bevy::{prelude::*, ui::RelativeCursorPosition, window::PrimaryWindow};
 
 use crate::{
     assets::GameFonts,
-    items::{Damage, Jolly},
+    items::{Damage, Jolly, Squiffy},
     AppState,
 };
 
@@ -17,6 +17,7 @@ impl Plugin for TooltipPlugin {
 
         app.register_component_as::<dyn TooltipComponent, Damage>();
         app.register_component_as::<dyn TooltipComponent, Jolly>();
+        app.register_component_as::<dyn TooltipComponent, Squiffy>();
 
         app.add_systems(
             Update,
@@ -40,7 +41,10 @@ pub enum Tooltipable {
 }
 
 #[derive(Debug)]
-pub struct TooltipSection(pub String);
+pub struct TooltipSection {
+    pub text: String,
+    pub index: i32,
+}
 
 #[derive(Component, Debug)]
 struct Tooltip(Vec<TooltipSection>);
@@ -71,7 +75,7 @@ impl Tooltip {
                 for text_section in self.0.iter() {
                     root.spawn(TextBundle {
                         text: Text::from_section(
-                            text_section.0.clone(),
+                            text_section.text.clone(),
                             TextStyle {
                                 color: FONT_COLOR,
                                 font_size: FONT_SIZE,

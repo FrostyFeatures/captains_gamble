@@ -25,4 +25,8 @@ impl Hp {
     pub fn decrease(&mut self, amount: i32) {
         self.current -= amount;
     }
+
+    pub fn health_bar_index(&self) -> usize {
+        usize::min(((self.current as f32 / self.max as f32) * 59.) as usize, 59)
+    }
 }

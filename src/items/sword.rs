@@ -1,16 +1,19 @@
 use bevy::{ecs::system::EntityCommands, prelude::*};
 
-use super::{Damage, Item, Jolly};
+use super::{Damage, Item, Jolly, Squiffy};
 
 const WOODEN_SWORD_BASE_DAMAGE: i32 = 3;
 const IRON_SWORD_BASE_DAMAGE: i32 = 5;
 const BLESSED_SWORD_BASE_DAMAGE: i32 = 4;
+const CURSED_SWORD_BASE_DAMAGE: i32 = 8;
 const BLESSED_SWORD_BASE_JOLLY: i32 = 2;
+const CURSED_SWORD_BASE_SQUIFFY: i32 = 2;
 
 pub enum SwordType {
     Wooden,
     Iron,
     Blessed,
+    Cursed,
 }
 
 impl SwordType {
@@ -19,6 +22,7 @@ impl SwordType {
             SwordType::Wooden => 0,
             SwordType::Iron => 1,
             SwordType::Blessed => 2,
+            SwordType::Cursed => 3,
         }
     }
 }
@@ -38,6 +42,7 @@ impl Item for Sword {
             SwordType::Wooden => entity_commands.insert(WoodenSwordBundle::default()),
             SwordType::Iron => entity_commands.insert(IronSwordBundle::default()),
             SwordType::Blessed => entity_commands.insert(BlessedSwordBundle::default()),
+            SwordType::Cursed => entity_commands.insert(CursedSwordBundle::default()),
         };
     }
 }
@@ -101,6 +106,31 @@ impl Default for BlessedSwordBundle {
             },
             jolly: Jolly {
                 base: BLESSED_SWORD_BASE_JOLLY,
+                ..default()
+            },
+        }
+    }
+}
+
+#[derive(Bundle)]
+struct CursedSwordBundle {
+    sword: Sword,
+    damage: Damage,
+    squiffy: Squiffy,
+}
+
+impl Default for CursedSwordBundle {
+    fn default() -> Self {
+        Self {
+            sword: Sword {
+                r#type: SwordType::Cursed,
+            },
+            damage: Damage {
+                base: CURSED_SWORD_BASE_DAMAGE,
+                ..default()
+            },
+            squiffy: Squiffy {
+                base: CURSED_SWORD_BASE_SQUIFFY,
                 ..default()
             },
         }
