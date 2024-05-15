@@ -16,8 +16,8 @@ pub struct BattlePlugin;
 
 impl Plugin for BattlePlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<UseItem>()
-            .insert_state(BattleState::default())
+        app.init_resource::<BattleWins>()
+            .add_event::<UseItem>()
             .add_systems(OnEnter(AppState::Battling), setup_battle)
             .add_systems(OnExit(AppState::Battling), cleanup_battle)
             .add_systems(
@@ -35,11 +35,8 @@ impl Plugin for BattlePlugin {
     }
 }
 
-#[derive(States, Default, Clone, Copy, PartialEq, Eq, Hash, Debug)]
-enum BattleState {
-    #[default]
-    Start,
-}
+#[derive(Resource, Default)]
+pub struct BattleWins(pub usize);
 
 #[derive(Event)]
 pub struct UseItem(pub Entity);
@@ -58,8 +55,6 @@ fn setup_battle(
     game_sprites: Res<GameSprites>,
     scroll_ui_q: Query<&Children, With<InventoryScrollUI>>,
 ) {
-    commands.spawn(EnemyBundle::default());
-
     commands
         .spawn(ScrollMarkerBundle {
             atlas_image_bundle: AtlasImageBundle {
@@ -100,6 +95,7 @@ fn player_turn_use_item(
 
 fn check_battle_end(
     mut next_app_state: ResMut<NextState<AppState>>,
+    mut battle_wins: ResMut<BattleWins>,
     player_hp_q: Query<&Hp, With<Player>>,
     enemy_hp_q: Query<&Hp, With<Enemy>>,
 ) {
@@ -109,6 +105,7 @@ fn check_battle_end(
 
     if enemy_hp_q.single().is_dead() {
         next_app_state.set(AppState::OrganizeInventory);
+        battle_wins.0 += 1;
     }
 }
 
@@ -148,15 +145,7 @@ fn update_scroll_marker_ui_pos(
     }
 }
 
-fn cleanup_battle(
-    mut commands: Commands,
-    enemies_q: Query<Entity, With<Enemy>>,
-    scroll_marker_q: Query<Entity, With<ScrollMarker>>,
-) {
-    for entity in enemies_q.iter() {
-        commands.get_entity(entity).map(|e| e.despawn_recursive());
-    }
-
+fn cleanup_battle(mut commands: Commands, scroll_marker_q: Query<Entity, With<ScrollMarker>>) {
     for entity in scroll_marker_q.iter() {
         commands.get_entity(entity).map(|e| e.despawn_recursive());
     }

@@ -112,8 +112,8 @@ fn setup_root_node(mut commands: Commands, game_sprites: Res<GameSprites>) {
             NodeBundle {
                 style: Style {
                     flex_direction: FlexDirection::Column,
-                    justify_content: JustifyContent::Center,
-                    align_items: AlignItems::Center,
+                    justify_content: JustifyContent::End,
+                    align_items: AlignItems::End,
                     width: Val::Percent(100.),
                     height: Val::Percent(100.),
                     ..default()
@@ -150,7 +150,6 @@ fn setup_root_node(mut commands: Commands, game_sprites: Res<GameSprites>) {
                     align_items: AlignItems::Start,
                     width: Val::Percent(100.),
                     height: Val::Percent(100.),
-                    // padding: UiRect::all(Val::Px(3.)),
                     ..default()
                 },
                 ..default()

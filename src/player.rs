@@ -55,6 +55,7 @@ fn spawn_player_stats_ui(
 ) {
     let health_bar = commands
         .spawn((
+            Player,
             HealthBarUI,
             AtlasImageBundle {
                 image: UiImage::new(game_sprites.health_bar_sheet.clone()),
@@ -73,7 +74,7 @@ fn spawn_player_stats_ui(
 }
 
 fn update_player_ui(
-    mut health_bar_ui: Query<&mut TextureAtlas, With<HealthBarUI>>,
+    mut health_bar_ui: Query<&mut TextureAtlas, (With<Player>, With<HealthBarUI>)>,
     player_hp_q: Query<&Hp, (With<Player>, Changed<Hp>)>,
 ) {
     if let Ok(hp) = player_hp_q.get_single() {

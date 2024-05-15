@@ -15,6 +15,7 @@ use bevy::{prelude::*, window::WindowResolution};
 use bevy_asset_loader::loading_state::{
     config::ConfigureLoadingState, LoadingState, LoadingStateAppExt,
 };
+use enemy::EnemyPlugin;
 use inventory::InventoryPlugin;
 use items::ItemPlugin;
 use log::BattleLogPlugin;
@@ -46,6 +47,7 @@ fn main() {
         )
         .add_plugins(UIPlugin)
         .add_plugins(PlayerPlugin)
+        .add_plugins(EnemyPlugin)
         .add_plugins(ItemPlugin)
         .add_plugins(InventoryPlugin)
         .add_plugins(BattlePlugin)
