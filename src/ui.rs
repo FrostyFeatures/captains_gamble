@@ -1,6 +1,10 @@
 use bevy::prelude::*;
 
-use crate::{assets::GameSprites, AppState};
+use crate::{
+    assets::{GameFonts, GameSprites},
+    common::Hp,
+    AppState,
+};
 
 pub struct UIPlugin;
 
@@ -9,6 +13,9 @@ impl Plugin for UIPlugin {
         app.add_systems(OnEnter(AppState::InitGame), setup_root_node);
     }
 }
+
+const FONT_SIZE: f32 = 6.;
+const FONT_COLOR: Color = Color::WHITE;
 
 #[derive(Component)]
 pub struct RootUINode;
@@ -32,7 +39,65 @@ pub struct BottomCenterUI;
 pub struct BottomRightUI;
 
 #[derive(Component)]
+pub struct HealthBarUIText;
+
+#[derive(Component)]
 pub struct HealthBarUI;
+
+impl HealthBarUI {
+    pub fn spawn(
+        parent: &mut ChildBuilder,
+        game_sprites: &GameSprites,
+        game_fonts: &GameFonts,
+        hp: &Hp,
+        tag: impl Component + Copy,
+    ) {
+        parent.spawn((
+            tag,
+            HealthBarUI,
+            AtlasImageBundle {
+                image: UiImage::new(game_sprites.health_bar_sheet.clone()),
+                texture_atlas: TextureAtlas {
+                    layout: game_sprites.health_bar_layout.clone(),
+                    index: hp.health_bar_index(),
+                },
+                ..default()
+            },
+        ));
+
+        parent
+            .spawn(NodeBundle {
+                style: Style {
+                    align_items: AlignItems::Center,
+                    justify_content: JustifyContent::Center,
+                    position_type: PositionType::Absolute,
+                    width: Val::Px(67.),
+                    height: Val::Px(9.),
+                    ..default()
+                },
+                ..default()
+            })
+            .with_children(|parent| {
+                parent.spawn((
+                    tag,
+                    HealthBarUIText,
+                    TextBundle {
+                        text: Text::from_section(
+                            format!("{hp}"),
+                            TextStyle {
+                                color: FONT_COLOR,
+                                font_size: FONT_SIZE,
+                                font: game_fonts.font.clone(),
+                                ..default()
+                            },
+                        ),
+                        style: Style { ..default() },
+                        ..default()
+                    },
+                ));
+            });
+    }
+}
 
 fn setup_root_node(mut commands: Commands, game_sprites: Res<GameSprites>) {
     let root_node = commands

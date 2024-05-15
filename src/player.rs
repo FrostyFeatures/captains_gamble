@@ -1,9 +1,9 @@
 use bevy::prelude::*;
 
 use crate::{
-    assets::GameSprites,
+    assets::{GameFonts, GameSprites},
     common::Hp,
-    ui::{BottomLeftUI, HealthBarUI},
+    ui::{BottomLeftUI, HealthBarUI, HealthBarUIText},
     AppState,
 };
 
@@ -25,7 +25,7 @@ impl Plugin for PlayerPlugin {
     }
 }
 
-#[derive(Component, Default)]
+#[derive(Component, Default, Clone, Copy)]
 pub struct Player;
 
 #[derive(Bundle)]
@@ -50,35 +50,36 @@ fn setup_player(mut commands: Commands) {
 fn spawn_player_stats_ui(
     mut commands: Commands,
     game_sprites: Res<GameSprites>,
+    game_fonts: Res<GameFonts>,
     player_stats_ui_q: Query<Entity, With<BottomLeftUI>>,
     player_hp_q: Query<&Hp, With<Player>>,
 ) {
-    let health_bar = commands
-        .spawn((
-            Player,
-            HealthBarUI,
-            AtlasImageBundle {
-                image: UiImage::new(game_sprites.health_bar_sheet.clone()),
-                texture_atlas: TextureAtlas {
-                    layout: game_sprites.health_bar_layout.clone(),
-                    index: player_hp_q.single().health_bar_index(),
-                },
-                ..default()
-            },
-        ))
-        .id();
-
     commands
         .entity(player_stats_ui_q.single())
-        .add_child(health_bar);
+        .with_children(|mut parent| {
+            HealthBarUI::spawn(
+                &mut parent,
+                &game_sprites,
+                &game_fonts,
+                &player_hp_q.single(),
+                Player,
+            );
+        });
 }
 
 fn update_player_ui(
     mut health_bar_ui: Query<&mut TextureAtlas, (With<Player>, With<HealthBarUI>)>,
+    mut health_bar_ui_text: Query<&mut Text, (With<Player>, With<HealthBarUIText>)>,
     player_hp_q: Query<&Hp, (With<Player>, Changed<Hp>)>,
 ) {
     if let Ok(hp) = player_hp_q.get_single() {
-        health_bar_ui.single_mut().index = hp.health_bar_index()
+        health_bar_ui.single_mut().index = hp.health_bar_index();
+        health_bar_ui_text
+            .single_mut()
+            .sections
+            .get_mut(0)
+            .unwrap()
+            .value = format!("{hp}");
     }
 }
 

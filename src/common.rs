@@ -1,3 +1,5 @@
+use core::fmt;
+
 use bevy::prelude::*;
 
 #[derive(Component)]
@@ -28,5 +30,11 @@ impl Hp {
 
     pub fn health_bar_index(&self) -> usize {
         usize::min(((self.current as f32 / self.max as f32) * 59.) as usize, 59)
+    }
+}
+
+impl fmt::Display for Hp {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}/{}", self.current, self.max)
     }
 }
