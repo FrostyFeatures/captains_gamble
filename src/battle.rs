@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use crate::{
     assets::{GameSprites, ICON_INDEX_SCROLL_MARKER},
     common::Hp,
-    enemy::{Enemy, EnemyBundle},
+    enemy::Enemy,
     inventory::InventoryScrollUI,
     player::Player,
     AppState,

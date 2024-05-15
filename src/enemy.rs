@@ -1,4 +1,4 @@
-use bevy::{log::tracing_subscriber::filter::BadFieldName, prelude::*};
+use bevy::prelude::*;
 
 use crate::{
     assets::GameSprites,
