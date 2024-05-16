@@ -1,7 +1,4 @@
-use bevy::{
-    prelude::*,
-    utils::{HashMap, HashSet},
-};
+use bevy::{prelude::*, utils::HashMap};
 
 use crate::{
     battle::UseItem,
@@ -96,22 +93,22 @@ pub struct AbilityTarget {
 pub enum TargetFilter {
     #[default]
     All,
-    Next,
-    Prev,
+    Next(usize),
+    Prev(usize),
     Neighbours,
     AllNext,
     AllPrev,
 }
 
 impl TargetFilter {
-    fn name(&self) -> &str {
+    fn name(&self) -> String {
         match self {
-            TargetFilter::All => "ALL",
-            TargetFilter::Next => "NEXT",
-            TargetFilter::Prev => "PREV",
-            TargetFilter::Neighbours => "NEIGHBOURS",
-            TargetFilter::AllNext => "ALL NEXT",
-            TargetFilter::AllPrev => "ALL PREV",
+            TargetFilter::All => "ALL".to_string(),
+            TargetFilter::Next(n) => format!("NEXT {n}"),
+            TargetFilter::Prev(n) => format!("PREV {n}"),
+            TargetFilter::Neighbours => "NEIGHBOURS".to_string(),
+            TargetFilter::AllNext => "ALL NEXT".to_string(),
+            TargetFilter::AllPrev => "ALL PREV".to_string(),
         }
     }
 
@@ -125,9 +122,13 @@ impl TargetFilter {
         let targets: Vec<(usize, &Entity)> = match self {
             TargetFilter::All => iter.collect(),
             TargetFilter::AllNext => iter.filter(|(i, _)| *i > index).collect(),
-            TargetFilter::Next => iter.filter(|(i, _)| *i == index + 1).collect(),
+            TargetFilter::Next(n) => iter
+                .filter(|(i, _)| *i > index && *i <= index + n)
+                .collect(),
             TargetFilter::AllPrev => iter.filter(|(i, _)| *i < index).collect(),
-            TargetFilter::Prev => iter.filter(|(i, _)| *i == index - 1).collect(),
+            TargetFilter::Prev(n) => iter
+                .filter(|(i, _)| *i < index && *i + n >= index)
+                .collect(),
             TargetFilter::Neighbours => iter
                 .filter(|(i, _)| *i == index - 1 || *i == index + 1)
                 .collect(),

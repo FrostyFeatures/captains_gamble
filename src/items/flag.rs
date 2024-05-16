@@ -34,9 +34,9 @@ impl Default for FlagBundle {
             flag: Flag,
             name: Name("Flag".to_string()),
             heave: Heave {
-                base: 1,
+                base: 3,
                 target: AbilityTarget {
-                    filter: TargetFilter::All,
+                    filter: TargetFilter::Neighbours,
                     attribute: POINTY.to_string(),
                 },
                 ..default()

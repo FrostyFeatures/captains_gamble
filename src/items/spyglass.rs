@@ -36,7 +36,7 @@ impl Default for SpyglassBundle {
             heave: Heave {
                 base: 3,
                 target: AbilityTarget {
-                    filter: TargetFilter::Next,
+                    filter: TargetFilter::Next(2),
                     attribute: POINTY.to_string(),
                 },
                 ..default()
