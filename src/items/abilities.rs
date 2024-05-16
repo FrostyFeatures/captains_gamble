@@ -256,7 +256,7 @@ impl Ability for Squiffy {
 }
 
 fn handle_squiffy_use(
-    mut log_message_er: EventWriter<LogMessageEvent>,
+    mut log_message_ew: EventWriter<LogMessageEvent>,
     mut use_item_ev: EventReader<UseItem>,
     mut player_hp_q: Query<&mut Hp, With<Player>>,
     squiffy_q: Query<&Squiffy>,
@@ -269,7 +269,7 @@ fn handle_squiffy_use(
             continue;
         };
         let amount = squiffy.amount();
-        log_message_er.send(LogMessageEvent(format!(
+        log_message_ew.send(LogMessageEvent(format!(
             "Self-inflicted {} health!",
             amount
         )));

@@ -1,10 +1,11 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, render::batching::batch_and_prepare_render_phase};
 
 use crate::{
     assets::{GameSprites, ICON_INDEX_SCROLL_MARKER},
     common::Hp,
-    enemy::Enemy,
+    enemy::{Enemy, ENEMY_DAMAGE},
     inventory::InventoryScrollUI,
+    log::LogMessageEvent,
     player::Player,
     AppState,
 };
@@ -17,23 +18,50 @@ pub struct BattlePlugin;
 impl Plugin for BattlePlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<BattleWins>()
+            .insert_state(BattleState::PlayerTurn)
             .add_event::<UseItem>()
+            .configure_sets(
+                Update,
+                (
+                    PlayerTurnSet
+                        .run_if(in_state(AppState::Battling))
+                        .run_if(in_state(BattleState::PlayerTurn)),
+                    EnemyTurnSet
+                        .run_if(in_state(AppState::Battling))
+                        .run_if(in_state(BattleState::EnemyTurn)),
+                ),
+            )
             .add_systems(OnEnter(AppState::Battling), setup_battle)
             .add_systems(OnExit(AppState::Battling), cleanup_battle)
             .add_systems(
                 Update,
                 (
-                    player_turn_use_item,
-                    update_scroll_marker_pos,
-                    update_scroll_marker_ui_pos,
-                    animate_scroll_marker,
-                    check_battle_end,
-                )
-                    .chain()
-                    .run_if(in_state(AppState::Battling)),
-            );
+                    (
+                        update_scroll_marker_pos,
+                        update_scroll_marker_ui_pos,
+                        animate_scroll_marker,
+                        check_battle_end,
+                    )
+                        .chain()
+                        .run_if(in_state(AppState::Battling)),
+                    player_turn_use_item.in_set(PlayerTurnSet),
+                ),
+            )
+            .add_systems(OnEnter(BattleState::EnemyTurn), enemy_turn);
     }
 }
+
+#[derive(States, Clone, Copy, PartialEq, Eq, Hash, Debug)]
+pub enum BattleState {
+    PlayerTurn,
+    EnemyTurn,
+}
+
+#[derive(SystemSet, Clone, Copy, PartialEq, Eq, Hash, Debug)]
+pub struct PlayerTurnSet;
+
+#[derive(SystemSet, Clone, Copy, PartialEq, Eq, Hash, Debug)]
+pub struct EnemyTurnSet;
 
 #[derive(Resource, Default)]
 pub struct BattleWins(pub usize);
@@ -52,9 +80,11 @@ struct ScrollMarkerBundle {
 
 fn setup_battle(
     mut commands: Commands,
+    mut battle_state: ResMut<NextState<BattleState>>,
     game_sprites: Res<GameSprites>,
     scroll_ui_q: Query<&Children, With<InventoryScrollUI>>,
 ) {
+    battle_state.set(BattleState::PlayerTurn);
     commands
         .spawn(ScrollMarkerBundle {
             atlas_image_bundle: AtlasImageBundle {
@@ -79,6 +109,7 @@ fn setup_battle(
 
 fn player_turn_use_item(
     mut use_item_ew: EventWriter<UseItem>,
+    mut battle_state: ResMut<NextState<BattleState>>,
     key_codes: Res<ButtonInput<KeyCode>>,
     scroll_q: Query<&Children, With<InventoryScrollUI>>,
     scroll_marker_q: Query<&ScrollMarker>,
@@ -89,8 +120,22 @@ fn player_turn_use_item(
                 return;
             };
             use_item_ew.send(UseItem(*entity));
+            battle_state.set(BattleState::EnemyTurn);
         }
     }
+}
+
+fn enemy_turn(
+    mut log_message_ew: EventWriter<LogMessageEvent>,
+    mut player_hp_q: Query<&mut Hp, With<Player>>,
+    mut battle_state: ResMut<NextState<BattleState>>,
+) {
+    player_hp_q.single_mut().decrease(ENEMY_DAMAGE);
+    log_message_ew.send(LogMessageEvent(format!(
+        "Enemy dealt {} damage to Player!",
+        ENEMY_DAMAGE
+    )));
+    battle_state.set(BattleState::PlayerTurn);
 }
 
 fn check_battle_end(
