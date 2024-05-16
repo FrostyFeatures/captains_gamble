@@ -3,7 +3,8 @@ use bevy::{ecs::system::EntityCommands, prelude::*};
 use crate::common::Name;
 
 use super::{
-    abilities::{AbilityTarget, Heave},
+    abilities::{AbilityTarget, Heave, TargetFilter},
+    attributes::POINTY,
     Item,
 };
 
@@ -34,7 +35,10 @@ impl Default for SpyglassBundle {
             name: Name("Spyglass".to_string()),
             heave: Heave {
                 base: 3,
-                target: AbilityTarget::Next,
+                target: AbilityTarget {
+                    filter: TargetFilter::Next,
+                    attribute: POINTY.to_string(),
+                },
                 ..default()
             },
         }

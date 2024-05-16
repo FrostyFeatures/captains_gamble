@@ -5,7 +5,7 @@ use crate::items::{
     sword::Sword,
 };
 mod abilities;
-mod attributes;
+pub mod attributes;
 pub mod flag;
 pub mod spyglass;
 pub mod sword;

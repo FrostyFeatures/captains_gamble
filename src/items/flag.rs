@@ -3,7 +3,8 @@ use bevy::{ecs::system::EntityCommands, prelude::*};
 use crate::common::Name;
 
 use super::{
-    abilities::{AbilityTarget, Heave},
+    abilities::{AbilityTarget, Heave, TargetFilter},
+    attributes::POINTY,
     Item,
 };
 
@@ -34,7 +35,10 @@ impl Default for FlagBundle {
             name: Name("Flag".to_string()),
             heave: Heave {
                 base: 1,
-                target: AbilityTarget::All,
+                target: AbilityTarget {
+                    filter: TargetFilter::All,
+                    attribute: POINTY.to_string(),
+                },
                 ..default()
             },
         }

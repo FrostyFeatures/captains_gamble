@@ -1,4 +1,7 @@
-use bevy::{prelude::*, utils::HashMap};
+use bevy::{
+    prelude::*,
+    utils::{HashMap, HashSet},
+};
 
 use crate::{
     battle::UseItem,
@@ -11,7 +14,7 @@ use crate::{
     AppState,
 };
 
-use super::attributes::Pointy;
+use super::attributes::Attribute;
 
 pub(super) struct AbilityPlugin;
 
@@ -83,8 +86,14 @@ where
     }
 }
 
-#[derive(Clone, Default, Copy, Debug)]
-pub enum AbilityTarget {
+#[derive(Default, Clone, Debug)]
+pub struct AbilityTarget {
+    pub filter: TargetFilter,
+    pub attribute: String,
+}
+
+#[derive(Default, Clone, Copy, Debug)]
+pub enum TargetFilter {
     #[default]
     All,
     Next,
@@ -94,15 +103,15 @@ pub enum AbilityTarget {
     AllPrev,
 }
 
-impl AbilityTarget {
+impl TargetFilter {
     fn name(&self) -> &str {
         match self {
-            AbilityTarget::All => "ALL",
-            AbilityTarget::Next => "NEXT",
-            AbilityTarget::Prev => "PREV",
-            AbilityTarget::Neighbours => "NEIGHBOURS",
-            AbilityTarget::AllNext => "ALL NEXT",
-            AbilityTarget::AllPrev => "ALL PREV",
+            TargetFilter::All => "ALL",
+            TargetFilter::Next => "NEXT",
+            TargetFilter::Prev => "PREV",
+            TargetFilter::Neighbours => "NEIGHBOURS",
+            TargetFilter::AllNext => "ALL NEXT",
+            TargetFilter::AllPrev => "ALL PREV",
         }
     }
 
@@ -114,12 +123,12 @@ impl AbilityTarget {
     ) -> Vec<Entity> {
         let iter = list.into_iter().enumerate().filter(|(_, c)| **c != entity);
         let targets: Vec<(usize, &Entity)> = match self {
-            AbilityTarget::All => iter.collect(),
-            AbilityTarget::AllNext => iter.filter(|(i, _)| *i > index).collect(),
-            AbilityTarget::Next => iter.filter(|(i, _)| *i == index + 1).collect(),
-            AbilityTarget::AllPrev => iter.filter(|(i, _)| *i < index).collect(),
-            AbilityTarget::Prev => iter.filter(|(i, _)| *i == index - 1).collect(),
-            AbilityTarget::Neighbours => iter
+            TargetFilter::All => iter.collect(),
+            TargetFilter::AllNext => iter.filter(|(i, _)| *i > index).collect(),
+            TargetFilter::Next => iter.filter(|(i, _)| *i == index + 1).collect(),
+            TargetFilter::AllPrev => iter.filter(|(i, _)| *i < index).collect(),
+            TargetFilter::Prev => iter.filter(|(i, _)| *i == index - 1).collect(),
+            TargetFilter::Neighbours => iter
                 .filter(|(i, _)| *i == index - 1 || *i == index + 1)
                 .collect(),
         };
@@ -276,7 +285,11 @@ pub struct Heave {
 
 impl Ability for Heave {
     fn name(&self) -> String {
-        format!("Heave ({})", self.target.name())
+        format!(
+            "Heave ({} {})",
+            self.target.filter.name(),
+            self.target.attribute
+        )
     }
 
     fn base(&self) -> i32 {
@@ -295,7 +308,7 @@ impl Ability for Heave {
 fn handle_heave_use(
     mut log_message_er: EventWriter<LogMessageEvent>,
     mut use_item_ev: EventReader<UseItem>,
-    mut damage_q: Query<&mut Damage, With<Pointy>>,
+    mut damage_q: Query<(&mut Damage, &dyn Attribute)>,
     heave_q: Query<&Heave>,
     scroll_q: Query<&Children, With<InventoryScrollUI>>,
 ) {
@@ -316,10 +329,16 @@ fn handle_heave_use(
         let amount = heave.amount();
         let targets = heave
             .target
+            .filter
             .get_targets(scroll_pos, item_e.0, scroll_children.iter());
         for &damage_e in targets.iter() {
-            if let Ok(mut damage) = damage_q.get_mut(damage_e) {
-                damage.modifiers.entry(item_e.0).or_default().amount += amount;
+            if let Ok((mut damage, attributes)) = damage_q.get_mut(damage_e) {
+                if attributes
+                    .iter()
+                    .any(|a| a.name() == heave.target.attribute)
+                {
+                    damage.modifiers.entry(item_e.0).or_default().amount += amount;
+                }
             }
         }
         log_message_er.send(LogMessageEvent(format!("Heaved {}!", amount)));
