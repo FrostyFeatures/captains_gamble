@@ -53,7 +53,7 @@ pub type AbilityModifiers = HashMap<Entity, AbilityModifier>;
 
 #[bevy_trait_query::queryable]
 pub trait Ability {
-    fn name(&self) -> &'static str;
+    fn name(&self) -> String;
     fn base(&self) -> i32;
     fn modifiers(&self) -> &AbilityModifiers;
     fn modifiers_mut(&mut self) -> &mut AbilityModifiers;
@@ -68,7 +68,7 @@ pub trait Ability {
 
 impl<T> TooltipComponent for T
 where
-    T: Ability + 'static,
+    T: Ability,
 {
     fn get_tooltip_section(&self) -> TooltipSection {
         let mut text = format!("{} {}", self.name(), self.base());
@@ -89,11 +89,23 @@ pub enum AbilityTarget {
     All,
     Next,
     Prev,
+    Neighbours,
     AllNext,
     AllPrev,
 }
 
 impl AbilityTarget {
+    fn name(&self) -> &str {
+        match self {
+            AbilityTarget::All => "ALL",
+            AbilityTarget::Next => "NEXT",
+            AbilityTarget::Prev => "PREV",
+            AbilityTarget::Neighbours => "NEIGHBOURS",
+            AbilityTarget::AllNext => "ALL NEXT",
+            AbilityTarget::AllPrev => "ALL PREV",
+        }
+    }
+
     fn get_targets<'a>(
         &self,
         index: usize,
@@ -107,6 +119,9 @@ impl AbilityTarget {
             AbilityTarget::Next => iter.filter(|(i, _)| *i == index + 1).collect(),
             AbilityTarget::AllPrev => iter.filter(|(i, _)| *i < index).collect(),
             AbilityTarget::Prev => iter.filter(|(i, _)| *i == index - 1).collect(),
+            AbilityTarget::Neighbours => iter
+                .filter(|(i, _)| *i == index - 1 || *i == index + 1)
+                .collect(),
         };
         targets.iter().map(|(_, e)| **e).collect()
     }
@@ -127,8 +142,8 @@ pub struct Damage {
 }
 
 impl Ability for Damage {
-    fn name(&self) -> &'static str {
-        "Damage"
+    fn name(&self) -> String {
+        "Damage".to_string()
     }
 
     fn base(&self) -> i32 {
@@ -170,8 +185,8 @@ pub struct Jolly {
 }
 
 impl Ability for Jolly {
-    fn name(&self) -> &'static str {
-        "Jolly"
+    fn name(&self) -> String {
+        "Jolly".to_string()
     }
 
     fn base(&self) -> i32 {
@@ -213,8 +228,8 @@ pub struct Squiffy {
 }
 
 impl Ability for Squiffy {
-    fn name(&self) -> &'static str {
-        "Squiffy"
+    fn name(&self) -> String {
+        "Squiffy".to_string()
     }
 
     fn base(&self) -> i32 {
@@ -260,8 +275,8 @@ pub struct Heave {
 }
 
 impl Ability for Heave {
-    fn name(&self) -> &'static str {
-        "Heave"
+    fn name(&self) -> String {
+        format!("Heave ({})", self.target.name())
     }
 
     fn base(&self) -> i32 {
@@ -304,7 +319,7 @@ fn handle_heave_use(
             .get_targets(scroll_pos, item_e.0, scroll_children.iter());
         for &damage_e in targets.iter() {
             if let Ok(mut damage) = damage_q.get_mut(damage_e) {
-                damage.modifiers.entry(item_e.0).or_default().amount += 1;
+                damage.modifiers.entry(item_e.0).or_default().amount += amount;
             }
         }
         log_message_er.send(LogMessageEvent(format!("Heaved {}!", amount)));

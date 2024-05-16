@@ -1,7 +1,9 @@
 use bevy::{ecs::system::EntityCommands, prelude::*};
 
+use crate::common::Name;
+
 use super::{
-    abilities::{AbilityTarget, Damage, Heave, Jolly, Squiffy},
+    abilities::{Damage, Jolly, Squiffy},
     attributes::Pointy,
     Item,
 };
@@ -54,6 +56,7 @@ impl Item for Sword {
 #[derive(Bundle)]
 struct WoodenSwordBundle {
     sword: Sword,
+    name: Name,
     damage: Damage,
     pointy: Pointy,
 }
@@ -64,6 +67,7 @@ impl Default for WoodenSwordBundle {
             sword: Sword {
                 r#type: SwordType::Wooden,
             },
+            name: Name("Wooden Sword".to_string()),
             damage: Damage {
                 base: WOODEN_SWORD_BASE_DAMAGE,
                 ..default()
@@ -76,6 +80,7 @@ impl Default for WoodenSwordBundle {
 #[derive(Bundle)]
 struct IronSwordBundle {
     sword: Sword,
+    name: Name,
     damage: Damage,
     pointy: Pointy,
 }
@@ -86,6 +91,7 @@ impl Default for IronSwordBundle {
             sword: Sword {
                 r#type: SwordType::Iron,
             },
+            name: Name("Blessed Sword".to_string()),
             damage: Damage {
                 base: IRON_SWORD_BASE_DAMAGE,
                 ..default()
@@ -98,9 +104,9 @@ impl Default for IronSwordBundle {
 #[derive(Bundle)]
 struct BlessedSwordBundle {
     sword: Sword,
+    name: Name,
     damage: Damage,
     jolly: Jolly,
-    heave: Heave,
     pointy: Pointy,
 }
 
@@ -110,17 +116,13 @@ impl Default for BlessedSwordBundle {
             sword: Sword {
                 r#type: SwordType::Blessed,
             },
+            name: Name("Blessed Sword".to_string()),
             damage: Damage {
                 base: BLESSED_SWORD_BASE_DAMAGE,
                 ..default()
             },
             jolly: Jolly {
                 base: BLESSED_SWORD_BASE_JOLLY,
-                ..default()
-            },
-            heave: Heave {
-                base: 1,
-                target: AbilityTarget::AllNext,
                 ..default()
             },
             pointy: Pointy,
@@ -131,6 +133,7 @@ impl Default for BlessedSwordBundle {
 #[derive(Bundle)]
 struct CursedSwordBundle {
     sword: Sword,
+    name: Name,
     damage: Damage,
     squiffy: Squiffy,
     pointy: Pointy,
@@ -142,6 +145,7 @@ impl Default for CursedSwordBundle {
             sword: Sword {
                 r#type: SwordType::Cursed,
             },
+            name: Name("Cursed Sword".to_string()),
             damage: Damage {
                 base: CURSED_SWORD_BASE_DAMAGE,
                 ..default()

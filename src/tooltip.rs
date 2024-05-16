@@ -1,6 +1,6 @@
 use bevy::{prelude::*, ui::RelativeCursorPosition, window::PrimaryWindow};
 
-use crate::{assets::GameFonts, AppState};
+use crate::{assets::GameFonts, common::Name, AppState};
 
 const FONT_SIZE: f32 = 4.;
 const FONT_COLOR: Color = Color::WHITE;
@@ -9,6 +9,10 @@ pub struct TooltipPlugin;
 
 impl Plugin for TooltipPlugin {
     fn build(&self, app: &mut App) {
+        use bevy_trait_query::RegisterExt;
+
+        app.register_component_as::<dyn TooltipComponent, Name>();
+
         app.add_systems(
             Update,
             (spawn_tooltips, update_tooltip_positions, destroy_tooltips)
@@ -102,10 +106,11 @@ fn spawn_tooltips(
         if !relative_cursor_postition.mouse_over() {
             continue;
         }
-        let tooltip_sections = tooltip_components
+        let mut tooltip_sections: Vec<TooltipSection> = tooltip_components
             .iter()
             .map(|tc| tc.get_tooltip_section())
             .collect();
+        tooltip_sections.sort_by(|a, b| a.index.cmp(&b.index));
         let tooltip = Tooltip(tooltip_sections);
         tooltip.spawn(&mut commands, &game_fonts);
         commands.get_entity(entity).map(|mut ec| {

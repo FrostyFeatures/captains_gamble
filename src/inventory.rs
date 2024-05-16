@@ -3,6 +3,8 @@ use bevy::{prelude::*, ui::RelativeCursorPosition, window::PrimaryWindow};
 use crate::{
     assets::GameSprites,
     items::{
+        flag::Flag,
+        spyglass::Spyglass,
         sword::{Sword, SwordType},
         Item,
     },
@@ -85,6 +87,8 @@ fn spawn_loot(
                     r#type: SwordType::Blessed,
                 },
             );
+            _spawn_ui_item(parent, &game_sprites, &Flag);
+            _spawn_ui_item(parent, &game_sprites, &Spyglass);
         });
 }
 

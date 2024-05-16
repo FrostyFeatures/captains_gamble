@@ -1,8 +1,13 @@
 use bevy::{ecs::system::EntityCommands, prelude::*};
 
-use crate::items::{abilities::AbilityPlugin, attributes::AttributePlugin, sword::Sword};
+use crate::items::{
+    abilities::AbilityPlugin, attributes::AttributePlugin, flag::Flag, spyglass::Spyglass,
+    sword::Sword,
+};
 mod abilities;
 mod attributes;
+pub mod flag;
+pub mod spyglass;
 pub mod sword;
 
 pub struct ItemPlugin;
@@ -12,6 +17,8 @@ impl Plugin for ItemPlugin {
         use bevy_trait_query::RegisterExt;
 
         app.register_component_as::<dyn Item, Sword>();
+        app.register_component_as::<dyn Item, Flag>();
+        app.register_component_as::<dyn Item, Spyglass>();
 
         app.add_plugins((AbilityPlugin, AttributePlugin));
     }
