@@ -4,6 +4,7 @@ use crate::{
     assets::GameSprites,
     items::{
         flag::Flag,
+        grog::Grog,
         spyglass::Spyglass,
         sword::{Sword, SwordType},
         Item,
@@ -89,6 +90,7 @@ fn spawn_loot(
             );
             _spawn_ui_item(parent, &game_sprites, &Flag);
             _spawn_ui_item(parent, &game_sprites, &Spyglass);
+            _spawn_ui_item(parent, &game_sprites, &Grog);
         });
 }
 

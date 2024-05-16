@@ -1,4 +1,5 @@
-use bevy::{prelude::*, utils::HashMap};
+use bevy::{log::tracing_subscriber::fmt::format, prelude::*, utils::HashMap};
+use rand::seq;
 
 use crate::{
     battle::UseItem,
@@ -6,7 +7,7 @@ use crate::{
     enemy::Enemy,
     inventory::InventoryScrollUI,
     log::LogMessageEvent,
-    player::Player,
+    player::{Player, PlayerStats},
     tooltip::{TooltipComponent, TooltipSection},
     AppState,
 };
@@ -23,11 +24,13 @@ impl Plugin for AbilityPlugin {
         app.register_component_as::<dyn TooltipComponent, Jolly>();
         app.register_component_as::<dyn TooltipComponent, Squiffy>();
         app.register_component_as::<dyn TooltipComponent, Heave>();
+        app.register_component_as::<dyn TooltipComponent, SeaLegs>();
 
         app.register_component_as::<dyn Ability, Damage>();
         app.register_component_as::<dyn Ability, Jolly>();
         app.register_component_as::<dyn Ability, Squiffy>();
         app.register_component_as::<dyn Ability, Heave>();
+        app.register_component_as::<dyn Ability, SeaLegs>();
 
         app.add_systems(
             Update,
@@ -36,6 +39,7 @@ impl Plugin for AbilityPlugin {
                 handle_jolly_use,
                 handle_squiffy_use,
                 handle_heave_use,
+                handle_sea_legs_use,
             )
                 .chain()
                 .run_if(in_state(AppState::Battling)),
@@ -170,20 +174,20 @@ impl Ability for Damage {
 }
 
 fn handle_damage_use(
-    mut log_message_er: EventWriter<LogMessageEvent>,
-    mut use_item_ev: EventReader<UseItem>,
+    mut log_message_ew: EventWriter<LogMessageEvent>,
+    mut use_item_er: EventReader<UseItem>,
     mut enemy_hp_q: Query<&mut Hp, With<Enemy>>,
     damage_q: Query<&Damage>,
 ) {
     let Ok(mut enemy_hp) = enemy_hp_q.get_single_mut() else {
         return;
     };
-    for item_e in use_item_ev.read() {
+    for item_e in use_item_er.read() {
         let Ok(damage) = damage_q.get(item_e.0) else {
             continue;
         };
         let amount = damage.amount();
-        log_message_er.send(LogMessageEvent(format!("Dealt {} damage!", amount)));
+        log_message_ew.send(LogMessageEvent(format!("Dealt {} damage!", amount)));
         enemy_hp.decrease(amount);
     }
 }
@@ -307,14 +311,14 @@ impl Ability for Heave {
 }
 
 fn handle_heave_use(
-    mut log_message_er: EventWriter<LogMessageEvent>,
-    mut use_item_ev: EventReader<UseItem>,
+    mut log_message_ew: EventWriter<LogMessageEvent>,
+    mut use_item_er: EventReader<UseItem>,
     mut damage_q: Query<(&mut Damage, &dyn Attribute)>,
     heave_q: Query<&Heave>,
     scroll_q: Query<&Children, With<InventoryScrollUI>>,
 ) {
     let scroll_children = scroll_q.single();
-    for item_e in use_item_ev.read() {
+    for item_e in use_item_er.read() {
         let Ok(heave) = heave_q.get(item_e.0) else {
             continue;
         };
@@ -342,6 +346,46 @@ fn handle_heave_use(
                 }
             }
         }
-        log_message_er.send(LogMessageEvent(format!("Heaved {}!", amount)));
+        log_message_ew.send(LogMessageEvent(format!("Heaved {}!", amount)));
+    }
+}
+
+#[derive(Component, Default, Clone, Debug)]
+pub struct SeaLegs {
+    pub base: i32,
+    pub modifiers: AbilityModifiers,
+}
+
+impl Ability for SeaLegs {
+    fn name(&self) -> String {
+        "Sea legs".to_string()
+    }
+
+    fn base(&self) -> i32 {
+        self.base
+    }
+
+    fn modifiers(&self) -> &AbilityModifiers {
+        &self.modifiers
+    }
+
+    fn modifiers_mut(&mut self) -> &mut AbilityModifiers {
+        &mut self.modifiers
+    }
+}
+
+fn handle_sea_legs_use(
+    mut log_message_ew: EventWriter<LogMessageEvent>,
+    mut use_item_er: EventReader<UseItem>,
+    mut player_stats_q: Query<&mut PlayerStats>,
+    sea_legs_q: Query<&SeaLegs>,
+) {
+    for item_e in use_item_er.read() {
+        let Ok(sea_legs) = sea_legs_q.get(item_e.0) else {
+            continue;
+        };
+        let amount = sea_legs.amount();
+        log_message_ew.send(LogMessageEvent(format!("Added {amount} Sea Legs!")));
+        player_stats_q.single_mut().sea_legs += amount;
     }
 }

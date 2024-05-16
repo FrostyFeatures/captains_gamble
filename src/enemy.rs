@@ -8,7 +8,7 @@ use crate::{
     AppState,
 };
 
-pub const ENEMY_DAMAGE: i32 = 3;
+pub const ENEMY_DAMAGE: i32 = 0;
 
 pub struct EnemyPlugin;
 
@@ -21,7 +21,7 @@ impl Plugin for EnemyPlugin {
             )
             .add_systems(OnExit(AppState::Battling), (destroy_enemy,))
             .add_systems(
-                Update,
+                PostUpdate,
                 update_enemy_ui.run_if(any_with_component::<HealthBarUI>),
             );
     }

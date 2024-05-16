@@ -14,8 +14,8 @@ impl Plugin for UIPlugin {
     }
 }
 
-const FONT_SIZE: f32 = 6.;
-const FONT_COLOR: Color = Color::WHITE;
+pub const FONT_SIZE: f32 = 6.;
+pub const FONT_COLOR: Color = Color::WHITE;
 
 #[derive(Component)]
 pub struct RootUINode;
@@ -88,7 +88,6 @@ impl HealthBarUI {
                                 color: FONT_COLOR,
                                 font_size: FONT_SIZE,
                                 font: game_fonts.font.clone(),
-                                ..default()
                             },
                         ),
                         style: Style { ..default() },
