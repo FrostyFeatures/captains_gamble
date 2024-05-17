@@ -61,10 +61,13 @@ fn main() {
         )
         .add_systems(PreStartup, init_rng)
         .add_systems(OnEnter(AppState::InitGame), setup_scene)
-        .add_systems(Update, start_game.run_if(in_state(AppState::GameStart)))
         .add_systems(
             Update,
-            start_battle.run_if(in_state(AppState::OrganizeInventory)),
+            (
+                restart_game.run_if(in_state(AppState::GameOver)),
+                start_game.run_if(in_state(AppState::GameStart)),
+                start_battle.run_if(in_state(AppState::OrganizeInventory)),
+            ),
         )
         .run();
 }
@@ -115,6 +118,15 @@ fn setup_scene(
         });
 
     next_app_state.set(AppState::GameStart);
+}
+
+fn restart_game(
+    mut next_app_state: ResMut<NextState<AppState>>,
+    key_codes: Res<ButtonInput<KeyCode>>,
+) {
+    if key_codes.just_pressed(KeyCode::Space) {
+        next_app_state.set(AppState::GameStart);
+    }
 }
 
 fn start_game(

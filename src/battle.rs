@@ -36,6 +36,7 @@ impl Plugin for BattlePlugin {
                         .run_if(in_state(BattleState::EnemyTurn)),
                 ),
             )
+            .add_systems(OnEnter(AppState::GameStart), reset_battle_wins)
             .add_systems(OnEnter(AppState::Battling), setup_battle)
             .add_systems(OnExit(AppState::Battling), cleanup_battle)
             .add_systems(
@@ -101,6 +102,10 @@ struct ScrollMarkerBundle {
     atlas_image_bundle: AtlasImageBundle,
 }
 
+fn reset_battle_wins(mut commands: Commands) {
+    commands.insert_resource(BattleWins::default());
+}
+
 fn setup_battle(
     mut commands: Commands,
     mut battle_state: ResMut<NextState<BattleState>>,
@@ -108,7 +113,7 @@ fn setup_battle(
     scroll_ui_q: Query<&Children, With<InventoryScrollUI>>,
 ) {
     battle_state.set(BattleState::PlayerTurn);
-    commands
+    let scroll_marker_ui = commands
         .spawn(ScrollMarkerBundle {
             atlas_image_bundle: AtlasImageBundle {
                 image: UiImage::new(game_sprites.items_tile_sheet.clone()),
@@ -127,7 +132,12 @@ fn setup_battle(
             },
             ..default()
         })
-        .set_parent(*scroll_ui_q.single().iter().next().unwrap());
+        .id();
+    if let Ok(children) = scroll_ui_q.get_single() {
+        if let Some(item) = children.iter().next() {
+            commands.entity(scroll_marker_ui).set_parent(*item);
+        }
+    }
 }
 
 fn player_turn_use_item(
@@ -139,8 +149,12 @@ fn player_turn_use_item(
     scroll_marker_q: Query<&ScrollMarker>,
 ) {
     if key_codes.just_pressed(KeyCode::Space) {
+        let Ok(children) = scroll_q.get_single() else {
+            battle_state.set(BattleState::EnemyTurn);
+            return;
+        };
         if let Ok(scroll_marker) = scroll_marker_q.get_single() {
-            let Some(entity) = scroll_q.single().get(scroll_marker.0) else {
+            let Some(entity) = children.get(scroll_marker.0) else {
                 battle_state.set(BattleState::EnemyTurn);
                 return;
             };
@@ -168,7 +182,9 @@ fn on_player_turn_end(
     consumables_q: Query<&Consumable>,
 ) {
     let (scroll_m_e, scroll_marker) = scroll_marker_q.single();
-    let children = scroll_q.single();
+    let Ok(children) = scroll_q.get_single() else {
+        return;
+    };
     let Some(used_item) = children.get(scroll_marker.0) else {
         return;
     };
@@ -261,9 +277,14 @@ fn update_scroll_marker_ui_pos(
         return;
     };
     let index = scroll_marker.0;
-    commands
-        .entity(entity)
-        .set_parent(*scroll_q.single().get(index).unwrap());
+    let Ok(children) = scroll_q.get_single() else {
+        return;
+    };
+    if children.len() > 0 {
+        commands
+            .entity(entity)
+            .set_parent(*children.get(index).unwrap());
+    }
 }
 
 fn cleanup_battle(mut commands: Commands, scroll_marker_q: Query<Entity, With<ScrollMarker>>) {
@@ -339,7 +360,9 @@ fn handle_heave_use(
     heave_q: Query<&Heave>,
     scroll_q: Query<&Children, With<InventoryScrollUI>>,
 ) {
-    let scroll_children = scroll_q.single();
+    let Ok(scroll_children) = scroll_q.get_single() else {
+        return;
+    };
     for item_e in use_item_er.read() {
         let Ok(heave) = heave_q.get(item_e.item) else {
             continue;

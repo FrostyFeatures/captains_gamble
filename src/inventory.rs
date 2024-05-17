@@ -21,7 +21,8 @@ pub struct InventoryPlugin;
 
 impl Plugin for InventoryPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(AppState::GameStart), spawn_inventory_scroll)
+        app.add_systems(OnExit(AppState::InitGame), spawn_inventory_scroll)
+            .add_systems(OnExit(AppState::GameOver), cleanup_inventory_scroll)
             .add_systems(
                 OnEnter(AppState::OrganizeInventory),
                 (spawn_loot_scroll_ui, spawn_loot).chain(),
@@ -145,6 +146,16 @@ fn spawn_inventory_scroll(
             ..default()
         },
     ));
+}
+
+fn cleanup_inventory_scroll(mut commands: Commands, scroll_ui_q: Query<&Children, With<ScrollUI>>) {
+    let Ok(children) = scroll_ui_q.get_single() else {
+        return;
+    };
+
+    for child in children.iter() {
+        commands.entity(*child).despawn_recursive();
+    }
 }
 
 fn spawn_loot_scroll_ui(
