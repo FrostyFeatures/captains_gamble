@@ -8,7 +8,7 @@ use crate::{
     AppState,
 };
 
-pub const ENEMY_DAMAGE: i32 = 0;
+pub const ENEMY_DAMAGE: i32 = 3;
 
 pub struct EnemyPlugin;
 

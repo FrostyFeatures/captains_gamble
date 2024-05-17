@@ -1,14 +1,13 @@
 use bevy::{ecs::system::EntityCommands, prelude::*};
 
 use crate::{
-    battle::UseItem,
     items::{
         abilities::AbilityPlugin, attributes::AttributePlugin, flag::Flag, grog::Grog,
         spyglass::Spyglass, sword::Sword,
     },
-    AppState,
+    tooltip::{TooltipComponent, TooltipSection},
 };
-mod abilities;
+pub mod abilities;
 pub mod attributes;
 pub mod flag;
 pub mod grog;
@@ -27,10 +26,6 @@ impl Plugin for ItemPlugin {
         app.register_component_as::<dyn Item, Grog>();
 
         app.add_plugins((AbilityPlugin, AttributePlugin));
-        app.add_systems(
-            Update,
-            handle_consumable_use.run_if(in_state(AppState::Battling)),
-        );
     }
 }
 
@@ -41,17 +36,13 @@ pub trait Item {
 }
 
 #[derive(Component)]
-pub struct Consumable(i32);
+pub struct Consumable(pub i32);
 
-fn handle_consumable_use(
-    mut use_item_er: EventReader<UseItem>,
-    mut consumables_q: Query<&mut Consumable>,
-) {
-    for item_e in use_item_er.read() {
-        let Ok(mut consumable) = consumables_q.get_mut(item_e.0) else {
-            continue;
-        };
-
-        consumable.0 -= 1;
+impl TooltipComponent for Consumable {
+    fn get_tooltip_section(&self) -> TooltipSection {
+        TooltipSection {
+            text: format!("Consumable {}", self.0),
+            index: i32::MAX,
+        }
     }
 }

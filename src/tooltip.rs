@@ -1,6 +1,6 @@
 use bevy::{prelude::*, ui::RelativeCursorPosition, window::PrimaryWindow};
 
-use crate::{assets::GameFonts, common::Name, AppState};
+use crate::{assets::GameFonts, common::Name, items::Consumable, AppState};
 
 const FONT_SIZE: f32 = 4.;
 const FONT_COLOR: Color = Color::WHITE;
@@ -12,6 +12,7 @@ impl Plugin for TooltipPlugin {
         use bevy_trait_query::RegisterExt;
 
         app.register_component_as::<dyn TooltipComponent, Name>();
+        app.register_component_as::<dyn TooltipComponent, Consumable>();
 
         app.add_systems(
             Update,

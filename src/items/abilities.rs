@@ -1,18 +1,6 @@
-use bevy::{log::tracing_subscriber::fmt::format, prelude::*, utils::HashMap};
-use rand::seq;
+use bevy::{prelude::*, utils::HashMap};
 
-use crate::{
-    battle::UseItem,
-    common::Hp,
-    enemy::Enemy,
-    inventory::InventoryScrollUI,
-    log::LogMessageEvent,
-    player::{Player, PlayerStats},
-    tooltip::{TooltipComponent, TooltipSection},
-    AppState,
-};
-
-use super::attributes::Attribute;
+use crate::tooltip::{TooltipComponent, TooltipSection};
 
 pub(super) struct AbilityPlugin;
 
@@ -32,19 +20,7 @@ impl Plugin for AbilityPlugin {
         app.register_component_as::<dyn Ability, Heave>();
         app.register_component_as::<dyn Ability, SeaLegs>();
 
-        app.add_systems(
-            Update,
-            (
-                handle_damage_use,
-                handle_jolly_use,
-                handle_squiffy_use,
-                handle_heave_use,
-                handle_sea_legs_use,
-            )
-                .chain()
-                .run_if(in_state(AppState::Battling)),
-        )
-        .add_systems(OnExit(AppState::Battling), clear_ability_modifiers);
+        // app.add_systems(OnExit(AppState::Battling), clear_ability_modifiers);
     }
 }
 
@@ -116,7 +92,7 @@ impl TargetFilter {
         }
     }
 
-    fn get_targets<'a>(
+    pub fn get_targets<'a>(
         &self,
         index: usize,
         entity: Entity,
@@ -173,25 +149,6 @@ impl Ability for Damage {
     }
 }
 
-fn handle_damage_use(
-    mut log_message_ew: EventWriter<LogMessageEvent>,
-    mut use_item_er: EventReader<UseItem>,
-    mut enemy_hp_q: Query<&mut Hp, With<Enemy>>,
-    damage_q: Query<&Damage>,
-) {
-    let Ok(mut enemy_hp) = enemy_hp_q.get_single_mut() else {
-        return;
-    };
-    for item_e in use_item_er.read() {
-        let Ok(damage) = damage_q.get(item_e.0) else {
-            continue;
-        };
-        let amount = damage.amount();
-        log_message_ew.send(LogMessageEvent(format!("Dealt {} damage!", amount)));
-        enemy_hp.decrease(amount);
-    }
-}
-
 #[derive(Component, Default, Debug, Clone)]
 pub struct Jolly {
     pub base: i32,
@@ -216,25 +173,6 @@ impl Ability for Jolly {
     }
 }
 
-fn handle_jolly_use(
-    mut log_message_er: EventWriter<LogMessageEvent>,
-    mut use_item_ev: EventReader<UseItem>,
-    mut player_hp_q: Query<&mut Hp, With<Player>>,
-    jolly_q: Query<&Jolly>,
-) {
-    let Ok(mut player_hp) = player_hp_q.get_single_mut() else {
-        return;
-    };
-    for item_e in use_item_ev.read() {
-        let Ok(jolly) = jolly_q.get(item_e.0) else {
-            continue;
-        };
-        let amount = jolly.amount();
-        log_message_er.send(LogMessageEvent(format!("Healed {} health!", amount)));
-        player_hp.increase(amount);
-    }
-}
-
 #[derive(Component, Default, Debug, Clone)]
 pub struct Squiffy {
     pub base: i32,
@@ -256,28 +194,6 @@ impl Ability for Squiffy {
 
     fn modifiers_mut(&mut self) -> &mut AbilityModifiers {
         &mut self.modifiers
-    }
-}
-
-fn handle_squiffy_use(
-    mut log_message_ew: EventWriter<LogMessageEvent>,
-    mut use_item_ev: EventReader<UseItem>,
-    mut player_hp_q: Query<&mut Hp, With<Player>>,
-    squiffy_q: Query<&Squiffy>,
-) {
-    let Ok(mut player_hp) = player_hp_q.get_single_mut() else {
-        return;
-    };
-    for item_e in use_item_ev.read() {
-        let Ok(squiffy) = squiffy_q.get(item_e.0) else {
-            continue;
-        };
-        let amount = squiffy.amount();
-        log_message_ew.send(LogMessageEvent(format!(
-            "Self-inflicted {} health!",
-            amount
-        )));
-        player_hp.decrease(amount);
     }
 }
 
@@ -310,46 +226,6 @@ impl Ability for Heave {
     }
 }
 
-fn handle_heave_use(
-    mut log_message_ew: EventWriter<LogMessageEvent>,
-    mut use_item_er: EventReader<UseItem>,
-    mut damage_q: Query<(&mut Damage, &dyn Attribute)>,
-    heave_q: Query<&Heave>,
-    scroll_q: Query<&Children, With<InventoryScrollUI>>,
-) {
-    let scroll_children = scroll_q.single();
-    for item_e in use_item_er.read() {
-        let Ok(heave) = heave_q.get(item_e.0) else {
-            continue;
-        };
-        let i = scroll_children
-            .iter()
-            .enumerate()
-            .filter(|(_, &c)| c == item_e.0)
-            .map(|(i, _)| i)
-            .next();
-        let Some(scroll_pos) = i else {
-            continue;
-        };
-        let amount = heave.amount();
-        let targets = heave
-            .target
-            .filter
-            .get_targets(scroll_pos, item_e.0, scroll_children.iter());
-        for &damage_e in targets.iter() {
-            if let Ok((mut damage, attributes)) = damage_q.get_mut(damage_e) {
-                if attributes
-                    .iter()
-                    .any(|a| a.name() == heave.target.attribute)
-                {
-                    damage.modifiers.entry(item_e.0).or_default().amount += amount;
-                }
-            }
-        }
-        log_message_ew.send(LogMessageEvent(format!("Heaved {}!", amount)));
-    }
-}
-
 #[derive(Component, Default, Clone, Debug)]
 pub struct SeaLegs {
     pub base: i32,
@@ -371,21 +247,5 @@ impl Ability for SeaLegs {
 
     fn modifiers_mut(&mut self) -> &mut AbilityModifiers {
         &mut self.modifiers
-    }
-}
-
-fn handle_sea_legs_use(
-    mut log_message_ew: EventWriter<LogMessageEvent>,
-    mut use_item_er: EventReader<UseItem>,
-    mut player_stats_q: Query<&mut PlayerStats>,
-    sea_legs_q: Query<&SeaLegs>,
-) {
-    for item_e in use_item_er.read() {
-        let Ok(sea_legs) = sea_legs_q.get(item_e.0) else {
-            continue;
-        };
-        let amount = sea_legs.amount();
-        log_message_ew.send(LogMessageEvent(format!("Added {amount} Sea Legs!")));
-        player_stats_q.single_mut().sea_legs += amount;
     }
 }

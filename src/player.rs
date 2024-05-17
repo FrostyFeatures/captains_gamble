@@ -21,9 +21,13 @@ impl Plugin for PlayerPlugin {
         .add_systems(OnExit(AppState::GameOver), destroy_player)
         .add_systems(
             PostUpdate,
-            update_player_ui.run_if(any_with_component::<HealthBarUI>),
+            (
+                update_player_hp_ui.run_if(any_with_component::<HealthBarUI>),
+                update_player_stats_ui.run_if(any_with_component::<SeaLegsUI>),
+            ),
         )
         .add_systems(OnEnter(AppState::Battling), reset_player_stats)
+        .add_systems(OnExit(AppState::Battling), reset_player_stats)
         .add_systems(
             OnEnter(BattleState::PlayerTurn),
             update_player_stats.run_if(in_state(AppState::Battling)),
@@ -119,26 +123,23 @@ fn reset_player_stats(mut player_stats_q: Query<&mut PlayerStats>) {
     *player_stats_q.single_mut() = PlayerStats::default();
 }
 
-fn update_player_ui(
+fn update_player_hp_ui(
     mut health_bar_ui_q: Query<&mut TextureAtlas, (With<Player>, With<HealthBarUI>)>,
-    mut text_set: ParamSet<(
-        Query<&mut Text, (With<Player>, With<HealthBarUIText>)>,
-        Query<&mut Text, (With<Player>, With<SeaLegsUI>)>,
-    )>,
-    player_stats_q: Query<(&Hp, &PlayerStats), (With<Player>, Changed<Hp>)>,
+    mut hp_text_ui: Query<&mut Text, (With<Player>, With<HealthBarUIText>)>,
+    player_hp_q: Query<&Hp, (With<Player>, Changed<Hp>)>,
 ) {
-    if let Ok((hp, player_stats)) = player_stats_q.get_single() {
+    if let Ok(hp) = player_hp_q.get_single() {
         health_bar_ui_q.single_mut().index = hp.health_bar_index();
-        text_set
-            .p0()
-            .single_mut()
-            .sections
-            .get_mut(0)
-            .unwrap()
-            .value = format!("{hp}");
+        hp_text_ui.single_mut().sections.get_mut(0).unwrap().value = format!("{hp}");
+    }
+}
 
-        text_set
-            .p1()
+fn update_player_stats_ui(
+    mut sea_legs_text_q: Query<&mut Text, (With<Player>, With<SeaLegsUI>)>,
+    player_stats_q: Query<&PlayerStats, (With<Player>, Changed<PlayerStats>)>,
+) {
+    if let Ok(player_stats) = player_stats_q.get_single() {
+        sea_legs_text_q
             .single_mut()
             .sections
             .get_mut(1)
