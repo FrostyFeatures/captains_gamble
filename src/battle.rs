@@ -141,7 +141,6 @@ fn player_turn_use_item(
     if key_codes.just_pressed(KeyCode::Space) {
         if let Ok(scroll_marker) = scroll_marker_q.get_single() {
             let Some(entity) = scroll_q.single().get(scroll_marker.0) else {
-                println!("No items 0_0");
                 battle_state.set(BattleState::EnemyTurn);
                 return;
             };
@@ -213,11 +212,9 @@ fn check_battle_end(
     player_hp_q: Query<&Hp, With<Player>>,
     enemy_hp_q: Query<&Hp, With<Enemy>>,
 ) {
-    println!("{}, {}", player_hp_q.single(), enemy_hp_q.single());
     if player_hp_q.single().is_dead() {
         next_app_state.set(AppState::GameOver);
         battle_state.set(BattleState::BattleEnd);
-        println!("LOSE");
         return;
     }
 
@@ -225,7 +222,6 @@ fn check_battle_end(
         next_app_state.set(AppState::OrganizeInventory);
         battle_state.set(BattleState::BattleEnd);
         battle_wins.0 += 1;
-        println!("WIN");
         return;
     }
 }
