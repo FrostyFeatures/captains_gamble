@@ -15,8 +15,11 @@ impl Plugin for ScenePlugin {
             timer: Timer::new(Duration::from_secs_f32(0.8), TimerMode::Repeating),
         })
         .add_systems(OnEnter(AppState::InitGame), setup_scene)
+        .add_systems(OnEnter(AppState::GameStart), spawn_player_pirate)
         .add_systems(OnEnter(AppState::Battling), spawn_enemy_pirate)
-        .add_systems(OnExit(AppState::Battling), despawn_enemy_pirate)
+        .add_systems(OnEnter(AppState::GameStart), despawn_enemy_pirate)
+        .add_systems(OnEnter(AppState::OrganizeInventory), despawn_enemy_pirate)
+        .add_systems(OnEnter(AppState::GameOver), despawn_player_pirate)
         .add_systems(
             Update,
             handle_player_damanged.run_if(any_with_component::<PlayerPirate>),
@@ -69,8 +72,9 @@ fn setup_scene(mut commands: Commands, game_sprites: Res<GameSprites>) {
         )),
         ..default()
     });
+}
 
-    // player
+fn spawn_player_pirate(mut commands: Commands, game_sprites: Res<GameSprites>) {
     commands.spawn((
         PlayerPirate,
         AnimationTimer { frames: 2 },
@@ -88,6 +92,15 @@ fn setup_scene(mut commands: Commands, game_sprites: Res<GameSprites>) {
             ..default()
         },
     ));
+}
+
+fn despawn_player_pirate(
+    mut commands: Commands,
+    player_pirate_q: Query<Entity, With<PlayerPirate>>,
+) {
+    for player_pirate in player_pirate_q.iter() {
+        commands.entity(player_pirate).despawn_recursive();
+    }
 }
 
 fn spawn_enemy_pirate(mut commands: Commands, game_sprites: Res<GameSprites>) {
@@ -179,7 +192,6 @@ fn update_animation_flashes(
         if flash.timer.finished() {
             sprite.color = Color::WHITE;
             commands.entity(entity).remove::<AnimationFlash>();
-            println!("done");
         }
     }
 }

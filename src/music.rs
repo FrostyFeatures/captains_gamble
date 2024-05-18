@@ -18,7 +18,7 @@ fn spawn_music(mut commands: Commands, game_audio: Res<GameAudio>) {
         source: game_audio.music.clone(),
         settings: PlaybackSettings {
             mode: PlaybackMode::Loop,
-            volume: Volume::new(0.1),
+            volume: Volume::new(0.01),
             ..default()
         },
     });
