@@ -1,20 +1,16 @@
-use bevy::{
-    prelude::*,
-    ui::{FocusPolicy, RelativeCursorPosition},
-    window::PrimaryWindow,
-};
+use bevy::{prelude::*, ui::RelativeCursorPosition, window::PrimaryWindow};
 
 use crate::{
     assets::{GameFonts, GameSprites},
     items::{
+        cutlass::{Cutlass, CutlassType},
         flag::Flag,
         grog::Grog,
         spyglass::Spyglass,
-        sword::{Sword, SwordType},
         Item,
     },
     tooltip::Tooltipable,
-    ui::{BottomCenterUI, BottomRightUI, TopInventoryUI, FONT_COLOR, FONT_SIZE},
+    ui::{BottomCenterUI, BottomRightUI, TopInventoryUI, FONT_COLOR},
     AppState,
 };
 
@@ -92,15 +88,15 @@ fn spawn_loot(
             _spawn_ui_item(
                 parent,
                 &game_sprites,
-                &Sword {
-                    r#type: SwordType::Cursed,
+                &Cutlass {
+                    r#type: CutlassType::Iron,
                 },
             );
             _spawn_ui_item(
                 parent,
                 &game_sprites,
-                &Sword {
-                    r#type: SwordType::Blessed,
+                &Cutlass {
+                    r#type: CutlassType::Blessed,
                 },
             );
             _spawn_ui_item(parent, &game_sprites, &Flag);
