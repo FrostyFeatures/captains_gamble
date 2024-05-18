@@ -5,11 +5,13 @@ mod enemy;
 mod inventory;
 mod items;
 mod log;
+mod music;
 mod player;
+mod scene;
 mod tooltip;
 mod ui;
 
-use assets::{GameFonts, GameSprites};
+use assets::{custom_load_assets, GameAudio, GameFonts, GameSprites, TextUIMaterial};
 use battle::BattlePlugin;
 use bevy::{prelude::*, window::WindowResolution};
 use bevy_asset_loader::loading_state::{
@@ -19,13 +21,15 @@ use enemy::EnemyPlugin;
 use inventory::InventoryPlugin;
 use items::ItemPlugin;
 use log::BattleLogPlugin;
+use music::MusicPlugin;
 use player::PlayerPlugin;
 use rand::rngs::ThreadRng;
+use scene::ScenePlugin;
 use tooltip::TooltipPlugin;
 use ui::UIPlugin;
 
 const GAME_WIDTH: f32 = 320.;
-// const GAME_HEIGHT: f32 = 180.;
+const GAME_HEIGHT: f32 = 180.;
 
 const MONITOR_WIDTH: f32 = 1920.;
 const MONITOR_HEIGHT: f32 = 1080.;
@@ -45,20 +49,25 @@ fn main() {
                 })
                 .set(ImagePlugin::default_nearest()),
         )
+        .add_plugins(UiMaterialPlugin::<TextUIMaterial>::default())
         .add_plugins(UIPlugin)
+        .add_plugins(ScenePlugin)
+        .add_plugins(MusicPlugin)
         .add_plugins(PlayerPlugin)
         .add_plugins(EnemyPlugin)
         .add_plugins(ItemPlugin)
         .add_plugins(InventoryPlugin)
         .add_plugins(BattlePlugin)
-        .add_plugins(BattleLogPlugin)
+        // .add_plugins(BattleLogPlugin)
         .add_plugins(TooltipPlugin)
         .add_loading_state(
             LoadingState::new(AppState::LoadingAssets)
                 .continue_to_state(AppState::InitGame)
                 .load_collection::<GameSprites>()
-                .load_collection::<GameFonts>(),
+                .load_collection::<GameFonts>()
+                .load_collection::<GameAudio>(),
         )
+        .add_systems(OnEnter(AppState::LoadingAssets), custom_load_assets)
         .add_systems(PreStartup, init_rng)
         .add_systems(OnEnter(AppState::InitGame), setup_scene)
         .add_systems(
@@ -89,33 +98,10 @@ fn init_rng(world: &mut World) {
     world.insert_non_send_resource(Rng(rand::thread_rng()));
 }
 
-fn setup_scene(
-    mut commands: Commands,
-    game_sprites: Res<GameSprites>,
-    mut next_app_state: ResMut<NextState<AppState>>,
-) {
+fn setup_scene(mut commands: Commands, mut next_app_state: ResMut<NextState<AppState>>) {
     commands.spawn(Camera2dBundle {
         ..Default::default()
     });
-
-    commands
-        .spawn((NodeBundle {
-            style: Style {
-                align_items: AlignItems::Center,
-                justify_content: JustifyContent::Center,
-                width: Val::Percent(100.0),
-                height: Val::Percent(100.0),
-                ..default()
-            },
-            z_index: ZIndex::Global(i32::MIN),
-            ..default()
-        },))
-        .with_children(|parent| {
-            parent.spawn(ImageBundle {
-                image: UiImage::new(game_sprites.background.clone()),
-                ..default()
-            });
-        });
 
     next_app_state.set(AppState::GameStart);
 }

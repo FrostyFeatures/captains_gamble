@@ -1,6 +1,16 @@
-use bevy::{prelude::*, ui::RelativeCursorPosition, window::PrimaryWindow};
+use bevy::{
+    prelude::*,
+    render::render_resource::{AsBindGroup, ShaderRef},
+    ui::RelativeCursorPosition,
+    window::PrimaryWindow,
+};
 
-use crate::{assets::GameFonts, common::Name, items::Consumable, AppState};
+use crate::{
+    assets::{GameFonts, GameMaterials},
+    common::Name,
+    items::Consumable,
+    AppState,
+};
 
 const FONT_SIZE: f32 = 4.;
 const FONT_COLOR: Color = Color::WHITE;
@@ -48,13 +58,18 @@ struct Tooltip(Vec<TooltipSection>);
 struct TooltipRoot;
 
 impl Tooltip {
-    fn spawn(&self, commands: &mut Commands, game_fonts: &GameFonts) {
+    fn spawn(
+        &self,
+        commands: &mut Commands,
+        game_materials: &GameMaterials,
+        game_fonts: &GameFonts,
+    ) {
         commands
             .spawn((
                 TooltipRoot,
-                NodeBundle {
+                MaterialNodeBundle {
                     z_index: ZIndex::Global(i32::MAX),
-                    background_color: BackgroundColor(Color::BLACK.with_a(0.8)),
+                    // background_color: BackgroundColor(Color::BLACK.with_a(0.8)),
                     style: Style {
                         position_type: PositionType::Absolute,
                         flex_direction: FlexDirection::Column,
@@ -63,6 +78,7 @@ impl Tooltip {
                         row_gap: Val::Px(2.),
                         ..default()
                     },
+                    material: game_materials.text_bg.clone(),
                     ..default()
                 },
             ))
@@ -88,6 +104,7 @@ impl Tooltip {
 fn spawn_tooltips(
     mut commands: Commands,
     game_fonts: Res<GameFonts>,
+    game_materials: Res<GameMaterials>,
     tooltipable_q: Query<
         (
             Entity,
@@ -113,7 +130,7 @@ fn spawn_tooltips(
             .collect();
         tooltip_sections.sort_by(|a, b| a.index.cmp(&b.index));
         let tooltip = Tooltip(tooltip_sections);
-        tooltip.spawn(&mut commands, &game_fonts);
+        tooltip.spawn(&mut commands, &game_materials, &game_fonts);
         commands.get_entity(entity).map(|mut ec| {
             ec.insert(tooltip);
         });

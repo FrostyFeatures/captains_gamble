@@ -23,6 +23,7 @@ pub struct BattlePlugin;
 impl Plugin for BattlePlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<BattleWins>()
+            .add_event::<BattleEvent>()
             .insert_state(BattleState::PlayerTurn)
             .add_event::<UseItem>()
             .configure_sets(
@@ -76,6 +77,12 @@ pub enum BattleState {
     PlayerTurn,
     EnemyTurn,
     BattleEnd,
+}
+
+#[derive(Event)]
+pub enum BattleEvent {
+    PlayerHurt,
+    EnemyHurt,
 }
 
 #[derive(SystemSet, Clone, Copy, PartialEq, Eq, Hash, Debug)]
@@ -206,7 +213,8 @@ fn on_player_turn_end(
 }
 
 fn enemy_turn(
-    mut log_message_ew: EventWriter<LogMessageEvent>,
+    // mut log_message_ew: EventWriter<LogMessageEvent>,
+    mut battle_event_ew: EventWriter<BattleEvent>,
     mut player_hp_q: Query<&mut Hp, With<Player>>,
     mut battle_state: ResMut<NextState<BattleState>>,
     player_stats_q: Query<&PlayerStats>,
@@ -214,10 +222,11 @@ fn enemy_turn(
     let player_stats = player_stats_q.single();
     let damage = (ENEMY_DAMAGE - player_stats.sea_legs).max(0);
     player_hp_q.single_mut().decrease(damage);
-    log_message_ew.send(LogMessageEvent(format!(
-        "Enemy dealt {} damage to Player!",
-        damage
-    )));
+    battle_event_ew.send(BattleEvent::PlayerHurt);
+    // log_message_ew.send(LogMessageEvent(format!(
+    //     "Enemy dealt {} damage to Player!",
+    //     damage
+    // )));
     battle_state.set(BattleState::PlayerTurn);
 }
 
@@ -294,7 +303,8 @@ fn cleanup_battle(mut commands: Commands, scroll_marker_q: Query<Entity, With<Sc
 }
 
 fn handle_damage_use(
-    mut log_message_ew: EventWriter<LogMessageEvent>,
+    // mut log_message_ew: EventWriter<LogMessageEvent>,
+    mut battle_event_ew: EventWriter<BattleEvent>,
     mut use_item_er: EventReader<UseItem>,
     mut enemy_hp_q: Query<&mut Hp, With<Enemy>>,
     damage_q: Query<&Damage>,
@@ -307,13 +317,14 @@ fn handle_damage_use(
             continue;
         };
         let amount = damage.amount();
-        log_message_ew.send(LogMessageEvent(format!("Dealt {} damage!", amount)));
+        battle_event_ew.send(BattleEvent::EnemyHurt);
+        // log_message_ew.send(LogMessageEvent(format!("Dealt {} damage!", amount)));
         enemy_hp.decrease(amount);
     }
 }
 
 fn handle_jolly_use(
-    mut log_message_er: EventWriter<LogMessageEvent>,
+    // mut log_message_ew: EventWriter<LogMessageEvent>,
     mut use_item_ev: EventReader<UseItem>,
     mut player_hp_q: Query<&mut Hp, With<Player>>,
     jolly_q: Query<&Jolly>,
@@ -326,13 +337,14 @@ fn handle_jolly_use(
             continue;
         };
         let amount = jolly.amount();
-        log_message_er.send(LogMessageEvent(format!("Healed {} health!", amount)));
+        // log_message_ew.send(LogMessageEvent(format!("Healed {} health!", amount)));
         player_hp.increase(amount);
     }
 }
 
 fn handle_squiffy_use(
-    mut log_message_ew: EventWriter<LogMessageEvent>,
+    // mut log_message_ew: EventWriter<LogMessageEvent>,
+    mut battle_event_ew: EventWriter<BattleEvent>,
     mut use_item_ev: EventReader<UseItem>,
     mut player_hp_q: Query<&mut Hp, With<Player>>,
     squiffy_q: Query<&Squiffy>,
@@ -345,16 +357,17 @@ fn handle_squiffy_use(
             continue;
         };
         let amount = squiffy.amount();
-        log_message_ew.send(LogMessageEvent(format!(
-            "Self-inflicted {} health!",
-            amount
-        )));
+        battle_event_ew.send(BattleEvent::PlayerHurt);
+        // log_message_ew.send(LogMessageEvent(format!(
+        //     "Self-inflicted {} health!",
+        //     amount
+        // )));
         player_hp.decrease(amount);
     }
 }
 
 fn handle_heave_use(
-    mut log_message_ew: EventWriter<LogMessageEvent>,
+    // mut log_message_ew: EventWriter<LogMessageEvent>,
     mut use_item_er: EventReader<UseItem>,
     mut damage_q: Query<(&mut Damage, &dyn Attribute)>,
     heave_q: Query<&Heave>,
@@ -392,12 +405,12 @@ fn handle_heave_use(
                 }
             }
         }
-        log_message_ew.send(LogMessageEvent(format!("Heaved {}!", amount)));
+        // log_message_ew.send(LogMessageEvent(format!("Heaved {}!", amount)));
     }
 }
 
 fn handle_sea_legs_use(
-    mut log_message_ew: EventWriter<LogMessageEvent>,
+    // mut log_message_ew: EventWriter<LogMessageEvent>,
     mut use_item_er: EventReader<UseItem>,
     mut player_stats_q: Query<&mut PlayerStats>,
     sea_legs_q: Query<&SeaLegs>,
@@ -407,7 +420,7 @@ fn handle_sea_legs_use(
             continue;
         };
         let amount = sea_legs.amount();
-        log_message_ew.send(LogMessageEvent(format!("Added {amount} Sea Legs!")));
+        // log_message_ew.send(LogMessageEvent(format!("Added {amount} Sea Legs!")));
         player_stats_q.single_mut().sea_legs += amount;
     }
 }
