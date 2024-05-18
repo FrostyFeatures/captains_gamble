@@ -67,7 +67,7 @@ pub struct GameSprites {
     #[asset(path = "sprites/pirate.png")]
     pub pirate_sheet: Handle<Image>,
 
-    #[asset(texture_atlas_layout(tile_size_x = 32., tile_size_y = 32., columns = 2, rows = 1))]
+    #[asset(texture_atlas_layout(tile_size_x = 48., tile_size_y = 32., columns = 3, rows = 1))]
     pub skeleton_layout: Handle<TextureAtlasLayout>,
 
     #[asset(path = "sprites/skeleton_pirate.png")]

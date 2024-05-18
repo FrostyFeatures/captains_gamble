@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use bevy::prelude::*;
 
 use crate::{
@@ -10,7 +12,7 @@ use crate::{
         attributes::Attribute,
         Consumable,
     },
-    log::LogMessageEvent,
+    // log::LogMessageEvent,
     player::{Player, PlayerStats},
     AppState,
 };
@@ -50,8 +52,9 @@ impl Plugin for BattlePlugin {
             )
             .add_systems(
                 OnEnter(BattleState::EnemyTurn),
-                enemy_turn.run_if(in_state(AppState::Battling)),
+                start_enemy_turn.run_if(in_state(AppState::Battling)),
             )
+            .add_systems(Update, enemy_turn.in_set(EnemyTurnSet))
             .add_systems(
                 Update,
                 (
@@ -79,10 +82,12 @@ pub enum BattleState {
     BattleEnd,
 }
 
-#[derive(Event)]
+#[derive(Event, Clone, Copy)]
 pub enum BattleEvent {
-    PlayerHurt,
-    EnemyHurt,
+    PlayerHurt(i32),
+    PlayerHeal(i32),
+    EnemyHurt(i32),
+    EnemyAttack,
 }
 
 #[derive(SystemSet, Clone, Copy, PartialEq, Eq, Hash, Debug)]
@@ -99,6 +104,9 @@ pub struct UseItem {
     pub item: Entity,
     pub consumed: bool,
 }
+
+#[derive(Component)]
+struct EnemyTurnTimer(Timer);
 
 #[derive(Component, Default)]
 struct ScrollMarker(usize);
@@ -212,22 +220,38 @@ fn on_player_turn_end(
     }
 }
 
+fn start_enemy_turn(mut commands: Commands) {
+    commands.spawn(EnemyTurnTimer(Timer::new(
+        Duration::from_secs_f32(0.5),
+        TimerMode::Once,
+    )));
+}
+
 fn enemy_turn(
+    mut commands: Commands,
     // mut log_message_ew: EventWriter<LogMessageEvent>,
     mut battle_event_ew: EventWriter<BattleEvent>,
     mut player_hp_q: Query<&mut Hp, With<Player>>,
     mut battle_state: ResMut<NextState<BattleState>>,
+    mut turn_timer_q: Query<(Entity, &mut EnemyTurnTimer)>,
     player_stats_q: Query<&PlayerStats>,
+    time: Res<Time>,
 ) {
-    let player_stats = player_stats_q.single();
-    let damage = (ENEMY_DAMAGE - player_stats.sea_legs).max(0);
-    player_hp_q.single_mut().decrease(damage);
-    battle_event_ew.send(BattleEvent::PlayerHurt);
-    // log_message_ew.send(LogMessageEvent(format!(
-    //     "Enemy dealt {} damage to Player!",
-    //     damage
-    // )));
-    battle_state.set(BattleState::PlayerTurn);
+    let (entity, mut turn_timer) = turn_timer_q.single_mut();
+    turn_timer.0.tick(time.delta());
+    if turn_timer.0.just_finished() {
+        let player_stats = player_stats_q.single();
+        let damage = (ENEMY_DAMAGE - player_stats.sea_legs).max(0);
+        player_hp_q.single_mut().decrease(damage);
+        battle_event_ew.send(BattleEvent::EnemyAttack);
+        battle_event_ew.send(BattleEvent::PlayerHurt(damage));
+        // log_message_ew.send(LogMessageEvent(format!(
+        //     "Enemy dealt {} damage to Player!",
+        //     damage
+        // )));
+        battle_state.set(BattleState::PlayerTurn);
+        commands.entity(entity).despawn_recursive();
+    }
 }
 
 fn check_battle_end(
@@ -317,7 +341,7 @@ fn handle_damage_use(
             continue;
         };
         let amount = damage.amount();
-        battle_event_ew.send(BattleEvent::EnemyHurt);
+        battle_event_ew.send(BattleEvent::EnemyHurt(amount));
         // log_message_ew.send(LogMessageEvent(format!("Dealt {} damage!", amount)));
         enemy_hp.decrease(amount);
     }
@@ -325,6 +349,7 @@ fn handle_damage_use(
 
 fn handle_jolly_use(
     // mut log_message_ew: EventWriter<LogMessageEvent>,
+    mut battle_event_ew: EventWriter<BattleEvent>,
     mut use_item_ev: EventReader<UseItem>,
     mut player_hp_q: Query<&mut Hp, With<Player>>,
     jolly_q: Query<&Jolly>,
@@ -337,6 +362,7 @@ fn handle_jolly_use(
             continue;
         };
         let amount = jolly.amount();
+        battle_event_ew.send(BattleEvent::PlayerHeal(amount));
         // log_message_ew.send(LogMessageEvent(format!("Healed {} health!", amount)));
         player_hp.increase(amount);
     }
@@ -357,7 +383,7 @@ fn handle_squiffy_use(
             continue;
         };
         let amount = squiffy.amount();
-        battle_event_ew.send(BattleEvent::PlayerHurt);
+        battle_event_ew.send(BattleEvent::PlayerHurt(amount));
         // log_message_ew.send(LogMessageEvent(format!(
         //     "Self-inflicted {} health!",
         //     amount

@@ -26,9 +26,16 @@ impl Plugin for ScenePlugin {
         )
         .add_systems(
             Update,
-            handle_enemy_damanged.run_if(any_with_component::<EnemyPirate>),
+            (handle_enemy_damanged, handle_enemy_attack).run_if(any_with_component::<EnemyPirate>),
         )
-        .add_systems(Update, (update_animation_timers, update_animation_flashes));
+        .add_systems(
+            Update,
+            (
+                update_animation_timers,
+                update_animation_flashes,
+                update_animation_overrides,
+            ),
+        );
     }
 }
 
@@ -47,6 +54,9 @@ struct GlobalAnimationTimer {
 struct AnimationTimer {
     frames: usize,
 }
+
+#[derive(Component)]
+struct AnimationOverride(Timer);
 
 #[derive(Component)]
 struct AnimationFlash {
@@ -130,7 +140,7 @@ fn despawn_enemy_pirate(mut commands: Commands, enemy_pirate_q: Query<Entity, Wi
 }
 
 fn update_animation_timers(
-    mut timer_q: Query<(&mut TextureAtlas, &AnimationTimer)>,
+    mut timer_q: Query<(&mut TextureAtlas, &AnimationTimer), Without<AnimationOverride>>,
     mut global_timer: ResMut<GlobalAnimationTimer>,
     time: Res<Time>,
 ) {
@@ -144,6 +154,20 @@ fn update_animation_timers(
     }
 }
 
+fn update_animation_overrides(
+    mut commands: Commands,
+    mut overrides_q: Query<(Entity, &mut AnimationOverride)>,
+    time: Res<Time>,
+) {
+    for (entity, mut r#override) in overrides_q.iter_mut() {
+        r#override.0.tick(time.delta());
+
+        if r#override.0.finished() {
+            commands.entity(entity).remove::<AnimationOverride>();
+        }
+    }
+}
+
 fn handle_player_damanged(
     mut battle_event_er: EventReader<BattleEvent>,
     mut commands: Commands,
@@ -151,7 +175,7 @@ fn handle_player_damanged(
 ) {
     let player_sprite = player_sprite_q.single();
     for event in battle_event_er.read() {
-        if !matches!(event, BattleEvent::PlayerHurt) {
+        if !matches!(event, BattleEvent::PlayerHurt(_)) {
             continue;
         }
         commands.entity(player_sprite).insert(AnimationFlash {
@@ -168,13 +192,32 @@ fn handle_enemy_damanged(
 ) {
     let enemy_sprite = enemy_sprite_q.single();
     for event in battle_event_er.read() {
-        if !matches!(event, BattleEvent::EnemyHurt) {
+        if !matches!(event, BattleEvent::EnemyHurt(_)) {
             continue;
         }
         commands.entity(enemy_sprite).insert(AnimationFlash {
             color: Color::RED,
             timer: Timer::new(Duration::from_secs_f32(0.3), TimerMode::Once),
         });
+    }
+}
+
+fn handle_enemy_attack(
+    mut commands: Commands,
+    mut battle_event_er: EventReader<BattleEvent>,
+    mut enemy_sprite_q: Query<(Entity, &mut TextureAtlas), With<EnemyPirate>>,
+) {
+    let (entity, mut atlas) = enemy_sprite_q.single_mut();
+    for event in battle_event_er.read() {
+        if !matches!(event, BattleEvent::EnemyAttack) {
+            continue;
+        }
+
+        atlas.index = 2;
+        commands.entity(entity).insert(AnimationOverride(Timer::new(
+            Duration::from_secs_f32(0.2),
+            TimerMode::Once,
+        )));
     }
 }
 

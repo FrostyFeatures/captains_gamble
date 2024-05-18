@@ -215,7 +215,7 @@ fn setup_root_node(mut commands: Commands, game_sprites: Res<GameSprites>) {
             NodeBundle {
                 style: Style {
                     flex_direction: FlexDirection::Column,
-                    justify_content: JustifyContent::Center,
+                    justify_content: JustifyContent::End,
                     align_items: AlignItems::Center,
                     width: Val::Percent(100.),
                     height: Val::Percent(100.),

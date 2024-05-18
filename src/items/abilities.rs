@@ -110,7 +110,7 @@ impl TargetFilter {
                 .filter(|(i, _)| *i < index && *i + n >= index)
                 .collect(),
             TargetFilter::Neighbours => iter
-                .filter(|(i, _)| *i == index - 1 || *i == index + 1)
+                .filter(|(i, _)| *i + 1 == index || *i == index + 1)
                 .collect(),
         };
         targets.iter().map(|(_, e)| **e).collect()

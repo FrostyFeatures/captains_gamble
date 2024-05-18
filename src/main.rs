@@ -6,6 +6,7 @@ mod inventory;
 mod items;
 mod log;
 mod music;
+mod numoids;
 mod player;
 mod scene;
 mod tooltip;
@@ -22,6 +23,7 @@ use inventory::InventoryPlugin;
 use items::ItemPlugin;
 // use log::BattleLogPlugin;
 use music::MusicPlugin;
+use numoids::NumoidPlugin;
 use player::PlayerPlugin;
 use rand::rngs::ThreadRng;
 use scene::ScenePlugin;
@@ -60,6 +62,7 @@ fn main() {
         .add_plugins(BattlePlugin)
         // .add_plugins(BattleLogPlugin)
         .add_plugins(TooltipPlugin)
+        .add_plugins(NumoidPlugin)
         .add_loading_state(
             LoadingState::new(AppState::LoadingAssets)
                 .continue_to_state(AppState::InitGame)
