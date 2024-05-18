@@ -20,7 +20,7 @@ use bevy_asset_loader::loading_state::{
 use enemy::EnemyPlugin;
 use inventory::InventoryPlugin;
 use items::ItemPlugin;
-use log::BattleLogPlugin;
+// use log::BattleLogPlugin;
 use music::MusicPlugin;
 use player::PlayerPlugin;
 use rand::rngs::ThreadRng;
@@ -52,7 +52,7 @@ fn main() {
         .add_plugins(UiMaterialPlugin::<TextUIMaterial>::default())
         .add_plugins(UIPlugin)
         .add_plugins(ScenePlugin)
-        .add_plugins(MusicPlugin)
+        // .add_plugins(MusicPlugin)
         .add_plugins(PlayerPlugin)
         .add_plugins(EnemyPlugin)
         .add_plugins(ItemPlugin)
@@ -70,14 +70,14 @@ fn main() {
         .add_systems(OnEnter(AppState::LoadingAssets), custom_load_assets)
         .add_systems(PreStartup, init_rng)
         .add_systems(OnEnter(AppState::InitGame), setup_scene)
-        .add_systems(
-            Update,
-            (
-                restart_game.run_if(in_state(AppState::GameOver)),
-                start_game.run_if(in_state(AppState::GameStart)),
-                start_battle.run_if(in_state(AppState::OrganizeInventory)),
-            ),
-        )
+        // .add_systems(
+        //     Update,
+        //     (
+        //         restart_game.run_if(in_state(AppState::GameOver)),
+        //         start_game.run_if(in_state(AppState::GameStart)),
+        //         start_battle.run_if(in_state(AppState::OrganizeInventory)),
+        //     ),
+        // )
         .run();
 }
 

@@ -43,6 +43,24 @@ pub struct GameSprites {
     #[asset(path = "sprites/health_bar.png")]
     pub health_bar_sheet: Handle<Image>,
 
+    #[asset(path = "sprites/start_battle_button.png")]
+    pub start_battle_button: Handle<Image>,
+
+    #[asset(path = "sprites/start_battle_button_hover.png")]
+    pub start_battle_button_hover: Handle<Image>,
+
+    #[asset(path = "sprites/start_game_button.png")]
+    pub start_game_button: Handle<Image>,
+
+    #[asset(path = "sprites/start_game_button_hover.png")]
+    pub start_game_button_hover: Handle<Image>,
+
+    #[asset(path = "sprites/restart_game_button.png")]
+    pub restart_game_button: Handle<Image>,
+
+    #[asset(path = "sprites/restart_game_button_hover.png")]
+    pub restart_game_button_hover: Handle<Image>,
+
     #[asset(texture_atlas_layout(tile_size_x = 32., tile_size_y = 32., columns = 2, rows = 1))]
     pub pirate_layout: Handle<TextureAtlasLayout>,
 

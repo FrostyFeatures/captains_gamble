@@ -10,7 +10,19 @@ pub struct UIPlugin;
 
 impl Plugin for UIPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(AppState::InitGame), setup_root_node);
+        app.add_systems(OnEnter(AppState::InitGame), setup_root_node)
+            .add_systems(OnEnter(AppState::GameStart), spawn_start_game_button)
+            .add_systems(OnExit(AppState::GameStart), destroy_start_button)
+            .add_systems(
+                Update,
+                start_button_system.run_if(any_with_component::<StartGameButton>),
+            )
+            .add_systems(OnEnter(AppState::GameOver), spawn_restart_game_button)
+            .add_systems(OnExit(AppState::GameOver), destroy_restart_button)
+            .add_systems(
+                Update,
+                restart_button_system.run_if(any_with_component::<RestartGameButton>),
+            );
     }
 }
 
@@ -43,6 +55,12 @@ pub struct HealthBarUIText;
 
 #[derive(Component)]
 pub struct HealthBarUI;
+
+#[derive(Component)]
+pub struct StartGameButton;
+
+#[derive(Component)]
+pub struct RestartGameButton;
 
 impl HealthBarUI {
     pub fn spawn(
@@ -163,6 +181,10 @@ fn setup_root_node(mut commands: Commands, game_sprites: Res<GameSprites>) {
                     align_items: AlignItems::Center,
                     width: Val::Percent(100.),
                     height: Val::Percent(100.),
+                    padding: UiRect {
+                        right: Val::Px(1.),
+                        ..default()
+                    },
                     ..default()
                 },
                 ..default()
@@ -230,4 +252,137 @@ fn setup_root_node(mut commands: Commands, game_sprites: Res<GameSprites>) {
         .entity(inventory_ui)
         .push_children(&[top_inventory_ui, bottom_inventory_ui]);
     commands.entity(root_node).add_child(inventory_ui);
+}
+
+fn spawn_start_game_button(
+    mut commands: Commands,
+    game_sprites: Res<GameSprites>,
+    game_fonts: Res<GameFonts>,
+    bottom_center_ui_q: Query<Entity, With<BottomCenterUI>>,
+) {
+    let start_game_button = commands
+        .spawn((
+            StartGameButton,
+            ButtonBundle {
+                style: Style {
+                    width: Val::Px(65.),
+                    height: Val::Px(16.),
+                    padding: UiRect {
+                        left: Val::Px(20.),
+                        top: Val::Px(6.),
+                        ..default()
+                    },
+                    ..default()
+                },
+                image: game_sprites.start_game_button.clone().into(),
+                ..default()
+            },
+        ))
+        .id();
+
+    let button_text = commands
+        .spawn(TextBundle {
+            text: Text::from_section(
+                "Start Game",
+                TextStyle {
+                    color: FONT_COLOR,
+                    font_size: 7.,
+                    font: game_fonts.font.clone(),
+                },
+            ),
+            ..default()
+        })
+        .id();
+
+    commands.entity(start_game_button).add_child(button_text);
+    commands
+        .entity(bottom_center_ui_q.single())
+        .add_child(start_game_button);
+}
+
+fn destroy_start_button(mut commands: Commands, buttons_q: Query<Entity, With<StartGameButton>>) {
+    for button in buttons_q.iter() {
+        commands.entity(button).despawn_recursive();
+    }
+}
+
+fn start_button_system(
+    mut interaction_q: Query<(&Interaction, &mut UiImage), With<StartGameButton>>,
+    mut app_state: ResMut<NextState<AppState>>,
+    game_sprites: Res<GameSprites>,
+) {
+    let (interaction, mut image) = interaction_q.single_mut();
+    match *interaction {
+        Interaction::Pressed => app_state.set(AppState::OrganizeInventory),
+        Interaction::Hovered => image.texture = game_sprites.start_game_button_hover.clone(),
+        Interaction::None => image.texture = game_sprites.start_game_button.clone(),
+    };
+}
+
+fn spawn_restart_game_button(
+    mut commands: Commands,
+    game_sprites: Res<GameSprites>,
+    game_fonts: Res<GameFonts>,
+    bottom_center_ui_q: Query<Entity, With<BottomCenterUI>>,
+) {
+    let restart_game_button = commands
+        .spawn((
+            RestartGameButton,
+            ButtonBundle {
+                style: Style {
+                    width: Val::Px(65.),
+                    height: Val::Px(16.),
+                    padding: UiRect {
+                        left: Val::Px(20.),
+                        top: Val::Px(6.),
+                        ..default()
+                    },
+                    ..default()
+                },
+                image: game_sprites.restart_game_button.clone().into(),
+                ..default()
+            },
+        ))
+        .id();
+
+    let button_text = commands
+        .spawn(TextBundle {
+            text: Text::from_section(
+                "Restart",
+                TextStyle {
+                    color: FONT_COLOR,
+                    font_size: 7.,
+                    font: game_fonts.font.clone(),
+                },
+            ),
+            ..default()
+        })
+        .id();
+
+    commands.entity(restart_game_button).add_child(button_text);
+    commands
+        .entity(bottom_center_ui_q.single())
+        .add_child(restart_game_button);
+}
+
+fn destroy_restart_button(
+    mut commands: Commands,
+    buttons_q: Query<Entity, With<RestartGameButton>>,
+) {
+    for button in buttons_q.iter() {
+        commands.entity(button).despawn_recursive();
+    }
+}
+
+fn restart_button_system(
+    mut interaction_q: Query<(&Interaction, &mut UiImage), With<RestartGameButton>>,
+    mut app_state: ResMut<NextState<AppState>>,
+    game_sprites: Res<GameSprites>,
+) {
+    let (interaction, mut image) = interaction_q.single_mut();
+    match *interaction {
+        Interaction::Pressed => app_state.set(AppState::GameStart),
+        Interaction::Hovered => image.texture = game_sprites.restart_game_button_hover.clone(),
+        Interaction::None => image.texture = game_sprites.restart_game_button.clone(),
+    };
 }

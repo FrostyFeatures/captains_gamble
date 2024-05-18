@@ -1,7 +1,11 @@
-use bevy::{prelude::*, ui::RelativeCursorPosition, window::PrimaryWindow};
+use bevy::{
+    prelude::*,
+    ui::{FocusPolicy, RelativeCursorPosition},
+    window::PrimaryWindow,
+};
 
 use crate::{
-    assets::GameSprites,
+    assets::{GameFonts, GameSprites},
     items::{
         flag::Flag,
         grog::Grog,
@@ -10,7 +14,7 @@ use crate::{
         Item,
     },
     tooltip::Tooltipable,
-    ui::{BottomCenterUI, TopInventoryUI},
+    ui::{BottomCenterUI, BottomRightUI, TopInventoryUI, FONT_COLOR, FONT_SIZE},
     AppState,
 };
 
@@ -25,14 +29,21 @@ impl Plugin for InventoryPlugin {
             .add_systems(OnExit(AppState::GameOver), cleanup_inventory_scroll)
             .add_systems(
                 OnEnter(AppState::OrganizeInventory),
-                (spawn_loot_scroll_ui, spawn_loot).chain(),
+                (spawn_loot_scroll_ui, spawn_loot, spawn_start_battle_button).chain(),
             )
-            .add_systems(OnExit(AppState::OrganizeInventory), destroy_loot_scroll_ui)
+            .add_systems(
+                OnExit(AppState::OrganizeInventory),
+                (destroy_loot_scroll_ui, destroy_buttons),
+            )
             .add_systems(
                 Update,
                 (start_dragging, stop_dragging, update_drag_container)
                     .chain()
                     .run_if(in_state(AppState::OrganizeInventory)),
+            )
+            .add_systems(
+                Update,
+                button_system.run_if(any_with_component::<StartBattleButton>),
             );
     }
 }
@@ -51,6 +62,9 @@ pub struct InventoryScrollUI;
 
 #[derive(Component)]
 pub struct LootScrollUI;
+
+#[derive(Component)]
+struct StartBattleButton;
 
 #[derive(Component, Clone, Copy)]
 struct ItemUI(Entity);
@@ -198,6 +212,52 @@ fn spawn_loot_scroll_ui(
         .add_child(loot_scroll_ui);
 }
 
+fn spawn_start_battle_button(
+    mut commands: Commands,
+    game_sprites: Res<GameSprites>,
+    game_fonts: Res<GameFonts>,
+    bottom_right_ui_q: Query<Entity, With<BottomRightUI>>,
+) {
+    let start_battle_button = commands
+        .spawn((
+            StartBattleButton,
+            ButtonBundle {
+                style: Style {
+                    width: Val::Px(65.),
+                    height: Val::Px(16.),
+                    padding: UiRect {
+                        left: Val::Px(4.),
+                        top: Val::Px(6.),
+                        ..default()
+                    },
+                    ..default()
+                },
+                image: game_sprites.start_battle_button.clone().into(),
+                ..default()
+            },
+        ))
+        .id();
+
+    let button_text = commands
+        .spawn(TextBundle {
+            text: Text::from_section(
+                "Start Battle",
+                TextStyle {
+                    color: FONT_COLOR,
+                    font_size: 7.,
+                    font: game_fonts.font.clone(),
+                },
+            ),
+            ..default()
+        })
+        .id();
+
+    commands.entity(start_battle_button).add_child(button_text);
+    commands
+        .entity(bottom_right_ui_q.single())
+        .add_child(start_battle_button);
+}
+
 fn destroy_loot_scroll_ui(
     mut commands: Commands,
     loot_scroll_ui_q: Query<Entity, With<LootScrollUI>>,
@@ -205,6 +265,25 @@ fn destroy_loot_scroll_ui(
     for loot_scroll_e in loot_scroll_ui_q.iter() {
         commands.entity(loot_scroll_e).despawn_recursive();
     }
+}
+
+fn destroy_buttons(mut commands: Commands, buttons_q: Query<Entity, With<StartBattleButton>>) {
+    for button in buttons_q.iter() {
+        commands.entity(button).despawn_recursive();
+    }
+}
+
+fn button_system(
+    mut interaction_q: Query<(&Interaction, &mut UiImage), With<StartBattleButton>>,
+    mut app_state: ResMut<NextState<AppState>>,
+    game_sprites: Res<GameSprites>,
+) {
+    let (interaction, mut image) = interaction_q.single_mut();
+    match *interaction {
+        Interaction::Pressed => app_state.set(AppState::Battling),
+        Interaction::Hovered => image.texture = game_sprites.start_battle_button_hover.clone(),
+        Interaction::None => image.texture = game_sprites.start_battle_button.clone(),
+    };
 }
 
 fn start_dragging(
