@@ -7,7 +7,7 @@ use crate::{
         flag::Flag,
         grog::Grog,
         spyglass::Spyglass,
-        Item,
+        Item, ItemType,
     },
     tooltip::Tooltipable,
     ui::{BottomCenterUI, BottomRightUI, TopInventoryUI, FONT_COLOR},
@@ -69,7 +69,7 @@ struct ItemUI(Entity);
 struct DragContainer;
 
 #[derive(Component)]
-struct Draggable;
+pub struct Draggable;
 
 #[derive(Component)]
 struct Dragging {
@@ -85,23 +85,8 @@ fn spawn_loot(
     commands
         .entity(loot_scroll_q.single())
         .with_children(|parent| {
-            _spawn_ui_item(
-                parent,
-                &game_sprites,
-                &Cutlass {
-                    r#type: CutlassType::Iron,
-                },
-            );
-            _spawn_ui_item(
-                parent,
-                &game_sprites,
-                &Cutlass {
-                    r#type: CutlassType::Blessed,
-                },
-            );
-            _spawn_ui_item(parent, &game_sprites, &Flag);
-            _spawn_ui_item(parent, &game_sprites, &Spyglass);
-            _spawn_ui_item(parent, &game_sprites, &Grog);
+            ItemType::WoodenSword.spawn(parent, &game_sprites);
+            ItemType::Grog.spawn(parent, &game_sprites);
         });
 }
 

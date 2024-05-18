@@ -131,6 +131,12 @@ pub struct Damage {
     pub modifiers: AbilityModifiers,
 }
 
+impl Damage {
+    pub fn new(base: i32) -> Self {
+        Self { base, ..default() }
+    }
+}
+
 impl Ability for Damage {
     fn name(&self) -> String {
         "Damage".to_string()
@@ -153,6 +159,12 @@ impl Ability for Damage {
 pub struct Jolly {
     pub base: i32,
     pub modifiers: AbilityModifiers,
+}
+
+impl Jolly {
+    pub fn new(base: i32) -> Self {
+        Self { base, ..default() }
+    }
 }
 
 impl Ability for Jolly {
@@ -179,6 +191,12 @@ pub struct Squiffy {
     pub modifiers: AbilityModifiers,
 }
 
+impl Squiffy {
+    pub fn new(base: i32) -> Self {
+        Self { base, ..default() }
+    }
+}
+
 impl Ability for Squiffy {
     fn name(&self) -> String {
         "Squiffy".to_string()
@@ -202,6 +220,12 @@ pub struct Heave {
     pub base: i32,
     pub modifiers: AbilityModifiers,
     pub target: AbilityTarget,
+}
+
+impl Heave {
+    pub fn new(base: i32, target: AbilityTarget) -> Self {
+        Self { base, ..default() }
+    }
 }
 
 impl Ability for Heave {
@@ -230,6 +254,12 @@ impl Ability for Heave {
 pub struct SeaLegs {
     pub base: i32,
     pub modifiers: AbilityModifiers,
+}
+
+impl SeaLegs {
+    pub fn new(base: i32) -> Self {
+        Self { base, ..default() }
+    }
 }
 
 impl Ability for SeaLegs {
