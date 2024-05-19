@@ -1,6 +1,6 @@
-use std::time::Duration;
+use std::{borrow::BorrowMut, time::Duration};
 
-use bevy::prelude::*;
+use bevy::{animation::prelude, prelude::*};
 
 use crate::{
     assets::{GameSprites, ICON_INDEX_SCROLL_MARKER},
@@ -9,7 +9,7 @@ use crate::{
     inventory::InventoryScrollUI,
     items::{
         abilities::{Ability, Cursed, Damage, Hearties, Heave, Jolly, SeaLegs, Swashbuckle},
-        attributes::Attribute,
+        attributes::{Attribute, Flintlock, Pellets},
         Consumable,
     },
     // log::LogMessageEvent,
@@ -66,6 +66,7 @@ impl Plugin for BattlePlugin {
                     handle_sea_legs_use,
                     handle_swashbuckle_use,
                     handle_jolly_use,
+                    handle_pellets_use,
                     update_scroll_marker_pos,
                     update_scroll_marker_ui_pos,
                     animate_scroll_marker,
@@ -333,15 +334,20 @@ fn handle_damage_use(
     mut battle_event_ew: EventWriter<BattleEvent>,
     mut use_item_er: EventReader<UseItem>,
     mut enemy_hp_q: Query<&mut Hp, With<Enemy>>,
-    damage_q: Query<&Damage>,
+    mut damage_q: Query<(&Damage, Option<&mut Flintlock>)>,
 ) {
     let Ok(mut enemy_hp) = enemy_hp_q.get_single_mut() else {
         return;
     };
     for item_e in use_item_er.read() {
-        let Ok(damage) = damage_q.get(item_e.item) else {
+        let Ok((damage, flintlock)) = damage_q.get_mut(item_e.item) else {
             continue;
         };
+        if let Some(mut flintlock) = flintlock {
+            if !flintlock.fire() {
+                continue;
+            }
+        }
         let amount = damage.amount();
         battle_event_ew.send(BattleEvent::EnemyHurt(amount));
         // log_message_ew.send(LogMessageEvent(format!("Dealt {} damage!", amount)));
@@ -456,7 +462,7 @@ fn handle_sea_legs_use(
 fn handle_swashbuckle_use(
     // mut log_message_ew: EventWriter<LogMessageEvent>,
     mut use_item_er: EventReader<UseItem>,
-    mut sea_legs_q: Query<(&mut Damage, &dyn Attribute)>,
+    mut sea_legs_q: Query<(&mut SeaLegs, &dyn Attribute)>,
     swashbuckle_q: Query<&Swashbuckle>,
     scroll_q: Query<&Children, With<InventoryScrollUI>>,
 ) {
@@ -499,7 +505,7 @@ fn handle_swashbuckle_use(
 fn handle_jolly_use(
     // mut log_message_ew: EventWriter<LogMessageEvent>,
     mut use_item_er: EventReader<UseItem>,
-    mut hearties_q: Query<(&mut Damage, &dyn Attribute)>,
+    mut hearties_q: Query<(&mut Hearties, &dyn Attribute)>,
     jolly_q: Query<&Jolly>,
     scroll_q: Query<&Children, With<InventoryScrollUI>>,
 ) {
@@ -536,5 +542,42 @@ fn handle_jolly_use(
             }
         }
         // log_message_ew.send(LogMessageEvent(format!("Heaved {}!", amount)));
+    }
+}
+
+fn handle_pellets_use(
+    mut use_item_er: EventReader<UseItem>,
+    mut flintlock_q: Query<&mut Flintlock>,
+    pellets_q: Query<&Pellets>,
+    scroll_q: Query<&Children, With<InventoryScrollUI>>,
+) {
+    let Ok(scroll_children) = scroll_q.get_single() else {
+        return;
+    };
+    for item_e in use_item_er.read() {
+        let Ok(pellets) = pellets_q.get(item_e.item) else {
+            continue;
+        };
+        let i = scroll_children
+            .iter()
+            .enumerate()
+            .filter(|(_, &c)| c == item_e.item)
+            .map(|(i, _)| i)
+            .next();
+        let Some(scroll_pos) = i else {
+            continue;
+        };
+        let targets =
+            pellets
+                .target
+                .filter
+                .get_targets(scroll_pos, item_e.item, scroll_children.iter());
+        for &flintlock_e in targets.iter() {
+            if let Ok(mut flintlock) = flintlock_q.get_mut(flintlock_e) {
+                if flintlock.can_load(&pellets.name().to_string()) {
+                    flintlock.load(pellets.load_amount);
+                }
+            }
+        }
     }
 }

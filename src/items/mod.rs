@@ -13,18 +13,24 @@ use self::{
     abilities::{
         AbilityTarget, Cursed, Damage, Hearties, Heave, Jolly, SeaLegs, Swashbuckle, TargetFilter,
     },
-    attributes::{Pointy, POINTY},
+    attributes::{Cannonball, Flintlock, Pellets, Pointy, CANNONBALL, FLINTLOCK, PELLETS, POINTY},
 };
 pub mod abilities;
 pub mod attributes;
 
-const MUNDANGE_ITEMS: &[ItemType] = &[ItemType::Orange, ItemType::Grog, ItemType::WoodenSword];
+const MUNDANGE_ITEMS: &[ItemType] = &[
+    ItemType::BagOfPellets,
+    ItemType::Orange,
+    ItemType::Grog,
+    ItemType::WoodenSword,
+];
 
 const SCARCE_ITEMS: &[ItemType] = &[
     ItemType::IronSword,
     ItemType::IronCutlass,
     ItemType::Flag,
     ItemType::Spyglass,
+    ItemType::Blunderbuss,
 ];
 
 const PRECIOUS_ITEMS: &[ItemType] = &[
@@ -135,6 +141,17 @@ pub enum ItemType {
     JewelOfTheEarth, // + ??
     CursedJewel,     // Cursed, + Damage
     Orange,
+    BagOfBeans,
+    MurkyBroth,
+    Blunderbuss,
+    BagOfPellets,
+    Cannon,
+    Cannonball,
+    ChainShot,
+    CursedVial,
+    VialOfLife,
+    VialOfTheSea,
+    VialOfTheEarth,
 }
 
 impl ItemType {
@@ -155,6 +172,17 @@ impl ItemType {
             ItemType::JewelOfTheEarth => 37,
             ItemType::CursedJewel => 34,
             ItemType::Orange => 16,
+            ItemType::BagOfBeans => 17,
+            ItemType::MurkyBroth => 18,
+            ItemType::Blunderbuss => 8,
+            ItemType::BagOfPellets => 9,
+            ItemType::Cannon => 13,
+            ItemType::Cannonball => 14,
+            ItemType::ChainShot => 15,
+            ItemType::CursedVial => 26,
+            ItemType::VialOfLife => 27,
+            ItemType::VialOfTheSea => 28,
+            ItemType::VialOfTheEarth => 29,
         }
     }
 
@@ -175,6 +203,17 @@ impl ItemType {
             ItemType::JewelOfTheEarth => "Jewel of the Earth".to_string(),
             ItemType::CursedJewel => "Cursed Jewel".to_string(),
             ItemType::Orange => "Orange".to_string(),
+            ItemType::BagOfBeans => "Bag Of Beans".to_string(),
+            ItemType::MurkyBroth => "Murky Broth".to_string(),
+            ItemType::Blunderbuss => "Blunderbuss".to_string(),
+            ItemType::BagOfPellets => "Bag Of Pellets".to_string(),
+            ItemType::Cannon => "Cannon".to_string(),
+            ItemType::Cannonball => "Cannonball".to_string(),
+            ItemType::ChainShot => "Chain Shot".to_string(),
+            ItemType::CursedVial => "Cursed Vial".to_string(),
+            ItemType::VialOfLife => "Vial Of Life".to_string(),
+            ItemType::VialOfTheSea => "Vial Of The Sea".to_string(),
+            ItemType::VialOfTheEarth => "Vial Of The Earth".to_string(),
         }
     }
 
@@ -250,7 +289,50 @@ impl ItemType {
                 Cursed::new(2),
                 Heave::new(1, AbilityTarget::with_all_attributes(TargetFilter::All)),
             )),
-            ItemType::Orange => entity_commands.insert((Hearties::new(6), Consumable(1))),
+            ItemType::Orange => entity_commands.insert((Hearties::new(7), Consumable(1))),
+            ItemType::BagOfBeans => entity_commands.insert((Hearties::new(4), Consumable(2))),
+            ItemType::MurkyBroth => {
+                entity_commands.insert((Hearties::new(3), SeaLegs::new(1), Consumable(2)))
+            }
+            ItemType::Blunderbuss => {
+                entity_commands.insert((Flintlock::empty(PELLETS.to_string(), 8), Damage::new(15)))
+            }
+            ItemType::BagOfPellets => entity_commands.insert((
+                Pellets {
+                    load_amount: 2,
+                    target: AbilityTarget {
+                        filter: TargetFilter::AllNext,
+                        attribute: FLINTLOCK.to_string(),
+                    },
+                },
+                Consumable(6),
+            )),
+            ItemType::Cannon => entity_commands
+                .insert((Flintlock::empty(CANNONBALL.to_string(), 27), Damage::new(5))),
+            ItemType::Cannonball => entity_commands.insert((
+                Cannonball {
+                    load_amount: 1,
+                    target: AbilityTarget {
+                        filter: TargetFilter::Next(1),
+                        attribute: FLINTLOCK.to_string(),
+                    },
+                },
+                Consumable(1),
+            )),
+            ItemType::ChainShot => entity_commands.insert((
+                Cannonball {
+                    load_amount: 1,
+                    target: AbilityTarget {
+                        filter: TargetFilter::Prev(2),
+                        attribute: FLINTLOCK.to_string(),
+                    },
+                },
+                Consumable(1),
+            )),
+            ItemType::CursedVial => entity_commands.insert(()),
+            ItemType::VialOfLife => entity_commands.insert(()),
+            ItemType::VialOfTheSea => entity_commands.insert(()),
+            ItemType::VialOfTheEarth => entity_commands.insert(()),
         };
     }
 }

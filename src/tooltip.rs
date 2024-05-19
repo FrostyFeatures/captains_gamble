@@ -1,11 +1,11 @@
-use bevy::{prelude::*, text, ui::RelativeCursorPosition, window::PrimaryWindow};
+use bevy::{prelude::*, ui::RelativeCursorPosition, window::PrimaryWindow};
 
 use crate::{
     assets::{GameFonts, GameMaterials},
     common::Name,
     items::{
         abilities::{Cursed, Damage, Hearties, Heave, Jolly, SeaLegs, Swashbuckle},
-        attributes::Pointy,
+        attributes::{Cannonball, Flintlock, Pellets, Pointy},
         Consumable, Rarity,
     },
     AppState,
@@ -34,6 +34,9 @@ impl Plugin for TooltipPlugin {
         app.register_component_as::<dyn TooltipComponent, Jolly>();
 
         app.register_component_as::<dyn TooltipComponent, Pointy>();
+        app.register_component_as::<dyn TooltipComponent, Flintlock>();
+        app.register_component_as::<dyn TooltipComponent, Pellets>();
+        app.register_component_as::<dyn TooltipComponent, Cannonball>();
 
         app.register_component_as::<dyn TooltipComponent, Name>();
         app.register_component_as::<dyn TooltipComponent, Rarity>();
