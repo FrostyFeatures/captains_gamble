@@ -4,7 +4,7 @@ use crate::{
     assets::{GameFonts, GameMaterials},
     common::Name,
     items::{
-        abilities::{Cursed, Damage, Hearties, Heave, Jolly, SeaLegs, Swashbuckle},
+        abilities::{Cursed, Damage, Hearties, Heave, Jolly, SeaLegs, Swashbuckle, Vitality},
         attributes::{Cannonball, Flintlock, Pellets, Pointy},
         Consumable, Rarity,
     },
@@ -32,6 +32,7 @@ impl Plugin for TooltipPlugin {
         app.register_component_as::<dyn TooltipComponent, SeaLegs>();
         app.register_component_as::<dyn TooltipComponent, Swashbuckle>();
         app.register_component_as::<dyn TooltipComponent, Jolly>();
+        app.register_component_as::<dyn TooltipComponent, Vitality>();
 
         app.register_component_as::<dyn TooltipComponent, Pointy>();
         app.register_component_as::<dyn TooltipComponent, Flintlock>();

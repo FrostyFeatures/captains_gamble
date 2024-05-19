@@ -5,10 +5,12 @@ use bevy::prelude::*;
 use crate::{
     assets::{GameSprites, ICON_INDEX_SCROLL_MARKER},
     common::Hp,
-    enemy::{Enemy, ENEMY_DAMAGE},
+    enemy::Enemy,
     inventory::InventoryScrollUI,
     items::{
-        abilities::{Ability, Cursed, Damage, Hearties, Heave, Jolly, SeaLegs, Swashbuckle},
+        abilities::{
+            Ability, Cursed, Damage, Hearties, Heave, Jolly, SeaLegs, Swashbuckle, Vitality,
+        },
         attributes::{Attribute, Cannonball, Flintlock, Pellets},
         Consumable,
     },
@@ -64,6 +66,7 @@ impl Plugin for BattlePlugin {
                     handle_jolly_use,
                     handle_pellets_use,
                     handle_cannonball_use,
+                    handle_vitality_use,
                     handle_consumable_use,
                     update_scroll_marker_pos,
                     update_scroll_marker_ui_pos,
@@ -198,6 +201,7 @@ fn enemy_turn(
     mut player_hp_q: Query<&mut Hp, With<Player>>,
     mut battle_state: ResMut<NextState<BattleState>>,
     mut turn_timer_q: Query<(Entity, &mut EnemyTurnTimer)>,
+    enemy_damage_q: Query<&Damage, With<Enemy>>,
     player_stats_q: Query<&PlayerStats>,
     time: Res<Time>,
 ) {
@@ -205,7 +209,7 @@ fn enemy_turn(
     turn_timer.0.tick(time.delta());
     if turn_timer.0.just_finished() {
         let player_stats = player_stats_q.single();
-        let damage = (ENEMY_DAMAGE - player_stats.sea_legs).max(0);
+        let damage = (enemy_damage_q.single().amount() - player_stats.sea_legs).max(0);
         player_hp_q.single_mut().decrease(damage);
         battle_event_ew.send(BattleEvent::EnemyAttack);
         battle_event_ew.send(BattleEvent::PlayerHurt(damage));
@@ -599,5 +603,19 @@ fn handle_consumable_use(
             commands.entity(scroll_m_e).remove_parent();
             commands.entity(*used_item).despawn_recursive();
         }
+    }
+}
+
+fn handle_vitality_use(
+    mut player_hp_q: Query<&mut Hp, With<Player>>,
+    mut use_item_er: EventReader<UseItem>,
+    vitality_q: Query<&Vitality>,
+) {
+    for item_e in use_item_er.read() {
+        let Ok(vitality) = vitality_q.get(item_e.item) else {
+            continue;
+        };
+        let amount = vitality.amount();
+        player_hp_q.single_mut().max_increase(amount);
     }
 }

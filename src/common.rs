@@ -28,6 +28,10 @@ impl Hp {
         self.current <= 0
     }
 
+    pub fn max_increase(&mut self, amount: i32) {
+        self.max += amount;
+    }
+
     pub fn increase(&mut self, amount: i32) {
         self.current = self.max.min(self.current + amount);
     }

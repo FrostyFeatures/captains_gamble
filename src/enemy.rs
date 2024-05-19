@@ -3,11 +3,10 @@ use bevy::prelude::*;
 use crate::{
     assets::{GameFonts, GameSprites},
     common::Hp,
-    ui::{BottomRightUI, HealthBarUI, HealthBarUIText},
+    items::abilities::{Ability, Damage},
+    ui::{BottomRightUI, HealthBarUI, HealthBarUIText, FONT_COLOR, FONT_SIZE},
     AppState, BattleWins,
 };
-
-pub const ENEMY_DAMAGE: i32 = 3;
 
 pub struct EnemyPlugin;
 
@@ -21,7 +20,10 @@ impl Plugin for EnemyPlugin {
             .add_systems(OnExit(AppState::Battling), (destroy_enemy,))
             .add_systems(
                 PostUpdate,
-                update_enemy_ui.run_if(any_with_component::<HealthBarUI>),
+                (
+                    update_enemy_hp_ui.run_if(any_with_component::<HealthBarUI>),
+                    update_enemy_damage_ui.run_if(any_with_component::<EnemyDamageUI>),
+                ),
             );
     }
 }
@@ -29,28 +31,25 @@ impl Plugin for EnemyPlugin {
 #[derive(Component, Default, Clone, Copy)]
 pub struct Enemy;
 
+#[derive(Component, Default, Clone, Copy)]
+pub struct EnemyDamageUI;
+
 #[derive(Bundle)]
 pub struct EnemyBundle {
     pub enemy: Enemy,
     pub hp: Hp,
-}
-
-impl Default for EnemyBundle {
-    fn default() -> Self {
-        Self {
-            enemy: Enemy,
-            hp: Hp::new(10),
-        }
-    }
+    pub damage: Damage,
 }
 
 impl EnemyBundle {
     fn from_battle_wins(battle_wins: &BattleWins) -> Self {
-        let hp = 10 + battle_wins.0 * 5;
+        let hp = Hp::new(6 + battle_wins.0 as i32 * 3);
+        let damage = Damage::new((3 as f32 + battle_wins.0 as f32 * 0.5) as i32);
 
         Self {
-            hp: Hp::new(hp as i32),
-            ..default()
+            enemy: Enemy,
+            hp,
+            damage,
         }
     }
 }
@@ -63,28 +62,48 @@ fn spawn_enemy_stats_ui(
     mut commands: Commands,
     game_sprites: Res<GameSprites>,
     game_fonts: Res<GameFonts>,
-    player_stats_ui_q: Query<Entity, With<BottomRightUI>>,
-    player_hp_q: Query<&Hp, With<Enemy>>,
+    enemy_stats_ui_q: Query<Entity, With<BottomRightUI>>,
+    enemy_stats_q: Query<(&Hp, &Damage), With<Enemy>>,
 ) {
+    let (hp, damage) = enemy_stats_q.single();
     commands
-        .entity(player_stats_ui_q.single())
+        .entity(enemy_stats_ui_q.single())
         .with_children(|mut parent| {
-            HealthBarUI::spawn(
-                &mut parent,
-                &game_sprites,
-                &game_fonts,
-                &player_hp_q.single(),
+            parent.spawn((
                 Enemy,
-            );
+                EnemyDamageUI,
+                TextBundle {
+                    text: Text::from_sections(vec![
+                        TextSection {
+                            value: "Damage: ".to_string(),
+                            style: TextStyle {
+                                color: FONT_COLOR,
+                                font_size: FONT_SIZE,
+                                font: game_fonts.font.clone(),
+                            },
+                        },
+                        TextSection {
+                            value: format!("{}", damage.amount()),
+                            style: TextStyle {
+                                color: FONT_COLOR,
+                                font_size: FONT_SIZE,
+                                font: game_fonts.font.clone(),
+                            },
+                        },
+                    ]),
+                    ..default()
+                },
+            ));
+            HealthBarUI::spawn(&mut parent, &game_sprites, &game_fonts, &hp, Enemy);
         });
 }
 
-fn update_enemy_ui(
+fn update_enemy_hp_ui(
     mut health_bar_ui: Query<&mut TextureAtlas, (With<Enemy>, With<HealthBarUI>)>,
     mut health_bar_ui_text: Query<&mut Text, (With<Enemy>, With<HealthBarUIText>)>,
-    player_hp_q: Query<&Hp, (With<Enemy>, Changed<Hp>)>,
+    enemy_hp_q: Query<&Hp, With<Enemy>>,
 ) {
-    if let Ok(hp) = player_hp_q.get_single() {
+    if let Ok(hp) = enemy_hp_q.get_single() {
         health_bar_ui.single_mut().index = hp.health_bar_index();
         health_bar_ui_text
             .single_mut()
@@ -92,6 +111,20 @@ fn update_enemy_ui(
             .get_mut(0)
             .unwrap()
             .value = format!("{hp}");
+    }
+}
+
+fn update_enemy_damage_ui(
+    mut enemy_damage_ui_text: Query<&mut Text, (With<Enemy>, With<EnemyDamageUI>)>,
+    enemy_damage_q: Query<&Damage, With<Enemy>>,
+) {
+    if let Ok(damage) = enemy_damage_q.get_single() {
+        enemy_damage_ui_text
+            .single_mut()
+            .sections
+            .get_mut(1)
+            .unwrap()
+            .value = format!("{}", damage.amount());
     }
 }
 

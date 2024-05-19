@@ -15,6 +15,7 @@ impl Plugin for AbilityPlugin {
         app.register_component_as::<dyn Ability, SeaLegs>();
         app.register_component_as::<dyn Ability, Swashbuckle>();
         app.register_component_as::<dyn Ability, Cursed>();
+        app.register_component_as::<dyn Ability, Vitality>();
     }
 }
 
@@ -292,6 +293,31 @@ impl Jolly {
 impl Ability for Jolly {
     fn name(&self) -> String {
         "Jolly".to_string()
+    }
+
+    fn base(&self) -> i32 {
+        self.base
+    }
+
+    fn modifier(&self) -> &AbilityModifier {
+        &AbilityModifier { amount: 0 }
+    }
+}
+
+#[derive(Component, Default, Clone, Debug)]
+pub struct Vitality {
+    pub base: i32,
+}
+
+impl Vitality {
+    pub fn new(base: i32) -> Self {
+        Self { base }
+    }
+}
+
+impl Ability for Vitality {
+    fn name(&self) -> String {
+        "Vitality".to_string()
     }
 
     fn base(&self) -> i32 {

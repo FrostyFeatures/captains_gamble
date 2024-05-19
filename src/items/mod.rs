@@ -12,6 +12,7 @@ use crate::{
 use self::{
     abilities::{
         AbilityTarget, Cursed, Damage, Hearties, Heave, Jolly, SeaLegs, Swashbuckle, TargetFilter,
+        Vitality,
     },
     attributes::{Cannonball, Flintlock, Pellets, Pointy, CANNONBALL, FLINTLOCK, PELLETS, POINTY},
 };
@@ -278,10 +279,10 @@ impl ItemType {
                 },
             ),)),
             ItemType::Spyglass => entity_commands.insert((Heave::new(
-                1,
+                2,
                 AbilityTarget {
-                    filter: TargetFilter::Next(3),
-                    attribute: POINTY.to_string(),
+                    filter: TargetFilter::Next(2),
+                    attribute: FLINTLOCK.to_string(),
                 },
             ),)),
             ItemType::Grog => entity_commands.insert((SeaLegs::new(3), Consumable(3))),
@@ -293,7 +294,7 @@ impl ItemType {
                 1,
                 AbilityTarget::with_all_attributes(TargetFilter::All),
             ),)),
-            ItemType::JewelOfTheEarth => todo!(),
+            ItemType::JewelOfTheEarth => entity_commands.insert(Vitality::new(3)),
             ItemType::CursedJewel => entity_commands.insert((
                 Cursed::new(2),
                 Heave::new(1, AbilityTarget::with_all_attributes(TargetFilter::All)),
@@ -310,7 +311,8 @@ impl ItemType {
                 Consumable(1),
             )),
             ItemType::BagOfBeans => entity_commands.insert((
-                Hearties::new(4),
+                Hearties::new(2),
+                Vitality::new(1),
                 Pellets {
                     load_amount: 1,
                     target: AbilityTarget {
@@ -320,9 +322,12 @@ impl ItemType {
                 },
                 Consumable(2),
             )),
-            ItemType::MurkyBroth => {
-                entity_commands.insert((Hearties::new(5), SeaLegs::new(1), Consumable(2)))
-            }
+            ItemType::MurkyBroth => entity_commands.insert((
+                Cursed::new(2),
+                Vitality::new(4),
+                SeaLegs::new(1),
+                Consumable(1),
+            )),
             ItemType::Blunderbuss => {
                 entity_commands.insert((Flintlock::empty(PELLETS.to_string(), 8), Damage::new(15)))
             }
@@ -358,10 +363,20 @@ impl ItemType {
                 },
                 Consumable(1),
             )),
-            ItemType::CursedVial => entity_commands.insert(()),
-            ItemType::VialOfLife => entity_commands.insert(()),
-            ItemType::VialOfTheSea => entity_commands.insert(()),
-            ItemType::VialOfTheEarth => entity_commands.insert(()),
+            ItemType::CursedVial => entity_commands.insert((
+                Cursed::new(3),
+                Heave::new(7, AbilityTarget::with_all_attributes(TargetFilter::All)),
+                Consumable(1),
+            )),
+            ItemType::VialOfLife => entity_commands.insert((
+                Jolly::new(6, AbilityTarget::with_all_attributes(TargetFilter::All)),
+                Consumable(1),
+            )),
+            ItemType::VialOfTheSea => entity_commands.insert((
+                Swashbuckle::new(6, AbilityTarget::with_all_attributes(TargetFilter::All)),
+                Consumable(1),
+            )),
+            ItemType::VialOfTheEarth => entity_commands.insert((Vitality::new(6), Consumable(1))),
         };
     }
 }
