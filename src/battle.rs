@@ -57,6 +57,7 @@ impl Plugin for BattlePlugin {
                 Update,
                 (
                     player_turn_use_item,
+                    handle_vitality_use,
                     handle_damage_use,
                     handle_hearties_use,
                     handle_cursed_use,
@@ -66,7 +67,6 @@ impl Plugin for BattlePlugin {
                     handle_jolly_use,
                     handle_pellets_use,
                     handle_cannonball_use,
-                    handle_vitality_use,
                     handle_consumable_use,
                     update_scroll_marker_pos,
                     update_scroll_marker_ui_pos,
@@ -368,7 +368,7 @@ fn handle_cursed_use(
 fn handle_heave_use(
     // mut log_message_ew: EventWriter<LogMessageEvent>,
     mut use_item_er: EventReader<UseItem>,
-    mut damage_q: Query<(&mut Damage, &dyn Attribute)>,
+    mut damage_q: Query<(&mut Damage, Option<&dyn Attribute>)>,
     heave_q: Query<&Heave>,
     scroll_q: Query<&Children, With<InventoryScrollUI>>,
 ) {
@@ -396,10 +396,12 @@ fn handle_heave_use(
                 .get_targets(scroll_pos, item_e.item, scroll_children.iter());
         for &damage_e in targets.iter() {
             if let Ok((mut damage, attributes)) = damage_q.get_mut(damage_e) {
-                if attributes
-                    .iter()
-                    .any(|a| a.name().contains(&heave.target.attribute))
-                {
+                if match attributes {
+                    Some(attributes) => attributes
+                        .iter()
+                        .any(|a| a.name().contains(&heave.target.attribute)),
+                    None => heave.target.attribute.is_empty(),
+                } {
                     damage.modifier.amount += amount;
                 }
             }
@@ -427,7 +429,7 @@ fn handle_sea_legs_use(
 fn handle_swashbuckle_use(
     // mut log_message_ew: EventWriter<LogMessageEvent>,
     mut use_item_er: EventReader<UseItem>,
-    mut sea_legs_q: Query<(&mut SeaLegs, &dyn Attribute)>,
+    mut sea_legs_q: Query<(&mut SeaLegs, Option<&dyn Attribute>)>,
     swashbuckle_q: Query<&Swashbuckle>,
     scroll_q: Query<&Children, With<InventoryScrollUI>>,
 ) {
@@ -455,10 +457,12 @@ fn handle_swashbuckle_use(
                 .get_targets(scroll_pos, item_e.item, scroll_children.iter());
         for &sea_legs_e in targets.iter() {
             if let Ok((mut sea_legs, attributes)) = sea_legs_q.get_mut(sea_legs_e) {
-                if attributes
-                    .iter()
-                    .any(|a| a.name().contains(&swashbuckle.target.attribute))
-                {
+                if match attributes {
+                    Some(attributes) => attributes
+                        .iter()
+                        .any(|a| a.name().contains(&swashbuckle.target.attribute)),
+                    None => swashbuckle.target.attribute.is_empty(),
+                } {
                     sea_legs.modifier.amount += amount;
                 }
             }
@@ -470,7 +474,7 @@ fn handle_swashbuckle_use(
 fn handle_jolly_use(
     // mut log_message_ew: EventWriter<LogMessageEvent>,
     mut use_item_er: EventReader<UseItem>,
-    mut hearties_q: Query<(&mut Hearties, &dyn Attribute)>,
+    mut hearties_q: Query<(&mut Hearties, Option<&dyn Attribute>)>,
     jolly_q: Query<&Jolly>,
     scroll_q: Query<&Children, With<InventoryScrollUI>>,
 ) {
@@ -498,10 +502,12 @@ fn handle_jolly_use(
                 .get_targets(scroll_pos, item_e.item, scroll_children.iter());
         for &hearties_e in targets.iter() {
             if let Ok((mut hearties, attributes)) = hearties_q.get_mut(hearties_e) {
-                if attributes
-                    .iter()
-                    .any(|a| a.name().contains(&jolly.target.attribute))
-                {
+                if match attributes {
+                    Some(attributes) => attributes
+                        .iter()
+                        .any(|a| a.name().contains(&jolly.target.attribute)),
+                    None => jolly.target.attribute.is_empty(),
+                } {
                     hearties.modifier.amount += amount;
                 }
             }

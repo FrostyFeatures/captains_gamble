@@ -2,14 +2,14 @@ use bevy::prelude::*;
 
 use crate::tooltip::{TooltipComponent, TooltipSection, TooltipSectionIndex};
 
-use super::abilities::{AbilityModifier, AbilityTarget, Damage, TargetFilter};
+use super::abilities::AbilityTarget;
 
 pub(super) struct AttributePlugin;
 
 pub const POINTY: &str = "Pointy";
 pub const FLINTLOCK: &str = "Flintlock";
 pub const PELLETS: &str = "Pellets";
-pub const CANNONBALL: &str = "Pellets";
+pub const CANNONBALL: &str = "Cannonball";
 
 impl Plugin for AttributePlugin {
     fn build(&self, app: &mut App) {
@@ -64,10 +64,6 @@ impl Flintlock {
 
     pub fn can_load(&self, ammo: &String) -> bool {
         ammo.contains(&self.ammo)
-    }
-
-    pub fn full(&self) -> bool {
-        self.loaded >= self.capacity
     }
 
     pub fn load(&mut self, amount: usize) {

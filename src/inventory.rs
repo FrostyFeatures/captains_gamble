@@ -1,11 +1,12 @@
 use bevy::{prelude::*, ui::RelativeCursorPosition, window::PrimaryWindow};
+use rand::Rng;
 
 use crate::{
     assets::{GameFonts, GameSprites},
-    items::{Item, ItemType},
+    items::{Item, ItemType, Rarity},
     tooltip::Tooltipable,
     ui::{BottomCenterUI, BottomRightUI, TopInventoryUI, FONT_COLOR},
-    AppState,
+    AppState, BattleWins,
 };
 
 pub const INVENTORY_SCROLL_SIZE: usize = 12;
@@ -73,23 +74,31 @@ struct Dragging {
 
 fn spawn_loot(
     mut commands: Commands,
+    mut rng: NonSendMut<crate::rng::Rng>,
+    battle_wins: Res<BattleWins>,
     game_sprites: Res<GameSprites>,
     loot_scroll_q: Query<Entity, With<LootScrollUI>>,
 ) {
     commands
         .entity(loot_scroll_q.single())
         .with_children(|parent| {
-            ItemType::WoodenSword.spawn(parent, &game_sprites);
-            ItemType::WoodenSword.spawn(parent, &game_sprites);
-            ItemType::WoodenSword.spawn(parent, &game_sprites);
-            ItemType::Grog.spawn(parent, &game_sprites);
-            ItemType::Orange.spawn(parent, &game_sprites);
-            // ItemType::Spyglass.spawn(parent, &game_sprites);
-            // ItemType::BlessedCutlass.spawn(parent, &game_sprites);
-            // ItemType::Cannon.spawn(parent, &game_sprites);
-            // ItemType::Cannonball.spawn(parent, &game_sprites);
-            // ItemType::ChainShot.spawn(parent, &game_sprites);
-            // ItemType::Orange.spawn(parent, &game_sprites);
+            if battle_wins.0 == 0 {
+                ItemType::WoodenSword.spawn(parent, &game_sprites);
+                ItemType::Grog.spawn(parent, &game_sprites);
+            } else {
+                for _ in 0..rng.0.gen_range(3..=4) {
+                    let item_type = if rng.0.gen_ratio(2, 5) {
+                        Rarity::Mundane.rand_item(&mut rng)
+                    } else if rng.0.gen_ratio(3, 5) {
+                        Rarity::Scarce.rand_item(&mut rng)
+                    } else if rng.0.gen_ratio(4, 5) {
+                        Rarity::Precious.rand_item(&mut rng)
+                    } else {
+                        Rarity::Mythic.rand_item(&mut rng)
+                    };
+                    item_type.spawn(parent, &game_sprites);
+                }
+            }
         });
 }
 

@@ -24,25 +24,27 @@ const MUNDANGE_ITEMS: &[ItemType] = &[
     ItemType::BagOfBeans,
     ItemType::Grog,
     ItemType::WoodenSword,
+    ItemType::MurkyBroth,
 ];
 
 const SCARCE_ITEMS: &[ItemType] = &[
     ItemType::IronSword,
     ItemType::IronCutlass,
+    ItemType::IronAxe,
     ItemType::Flag,
     ItemType::Spyglass,
     ItemType::Blunderbuss,
-    ItemType::BagOfPellets,
     ItemType::Cannon,
     ItemType::Cannonball,
-    ItemType::MurkyBroth,
 ];
 
 const PRECIOUS_ITEMS: &[ItemType] = &[
     ItemType::BlessedSword,
     ItemType::BlessedCutlass,
+    ItemType::BlessedAxe,
     ItemType::CursedSword,
     ItemType::CursedCutlass,
+    ItemType::CursedAxe,
     ItemType::ChainShot,
     ItemType::CursedVial,
     ItemType::VialOfLife,
@@ -74,7 +76,7 @@ pub enum Rarity {
 }
 
 impl Rarity {
-    fn rand_item(&self, rng: &mut crate::rng::Rng) -> ItemType {
+    pub fn rand_item(&self, rng: &mut crate::rng::Rng) -> ItemType {
         match self {
             Rarity::Mundane => MUNDANGE_ITEMS[rng.0.gen_range(0..MUNDANGE_ITEMS.len())],
             Rarity::Scarce => SCARCE_ITEMS[rng.0.gen_range(0..SCARCE_ITEMS.len())],
@@ -143,6 +145,9 @@ pub enum ItemType {
     IronCutlass,
     BlessedCutlass,
     CursedCutlass,
+    IronAxe,
+    BlessedAxe,
+    CursedAxe,
     Flag,
     Spyglass,
     Grog,
@@ -174,6 +179,9 @@ impl ItemType {
             ItemType::IronCutlass => 4,
             ItemType::BlessedCutlass => 5,
             ItemType::CursedCutlass => 6,
+            ItemType::IronAxe => 10,
+            ItemType::BlessedAxe => 11,
+            ItemType::CursedAxe => 12,
             ItemType::Flag => 31,
             ItemType::Spyglass => 23,
             ItemType::Grog => 33,
@@ -206,6 +214,9 @@ impl ItemType {
             ItemType::IronCutlass => "Iron Cutlass".to_string(),
             ItemType::BlessedCutlass => "Blessed Cutlass".to_string(),
             ItemType::CursedCutlass => "Cursed Cutlass".to_string(),
+            ItemType::IronAxe => "Iron Axe".to_string(),
+            ItemType::BlessedAxe => "Blessed Axe".to_string(),
+            ItemType::CursedAxe => "Cursed Axe".to_string(),
             ItemType::Flag => "Flag".to_string(),
             ItemType::Spyglass => "Spyglass".to_string(),
             ItemType::JewelOfTheSea => "Jewel of the Sea".to_string(),
@@ -255,22 +266,53 @@ impl ItemType {
     fn insert(&self, mut entity_commands: EntityCommands) {
         match self {
             ItemType::WoodenSword => entity_commands.insert((Damage::new(3), Pointy)),
-            ItemType::IronSword => entity_commands.insert((Damage::new(5), Pointy)),
-            ItemType::BlessedSword => {
-                entity_commands.insert((Damage::new(4), Hearties::new(2), Pointy))
-            }
-            ItemType::CursedSword => {
-                entity_commands.insert((Damage::new(8), Cursed::new(2), Pointy))
-            }
+            ItemType::IronSword => entity_commands.insert((
+                Damage::new(5),
+                Heave::new(
+                    1,
+                    AbilityTarget {
+                        filter: TargetFilter::Next(1),
+                        attribute: POINTY.to_string(),
+                    },
+                ),
+                Pointy,
+            )),
+            ItemType::BlessedSword => entity_commands.insert((
+                Damage::new(4),
+                Heave::new(
+                    1,
+                    AbilityTarget {
+                        filter: TargetFilter::Next(1),
+                        attribute: POINTY.to_string(),
+                    },
+                ),
+                Hearties::new(3),
+                Pointy,
+            )),
+            ItemType::CursedSword => entity_commands.insert((
+                Damage::new(8),
+                Heave::new(
+                    2,
+                    AbilityTarget {
+                        filter: TargetFilter::Next(1),
+                        attribute: POINTY.to_string(),
+                    },
+                ),
+                Cursed::new(2),
+                Pointy,
+            )),
             ItemType::IronCutlass => {
                 entity_commands.insert((Damage::new(3), SeaLegs::new(1), Pointy))
             }
             ItemType::BlessedCutlass => {
-                entity_commands.insert((Damage::new(2), SeaLegs::new(1), Hearties::new(1), Pointy))
+                entity_commands.insert((Damage::new(2), SeaLegs::new(1), Hearties::new(2), Pointy))
             }
             ItemType::CursedCutlass => {
                 entity_commands.insert((Damage::new(5), SeaLegs::new(2), Cursed::new(2), Pointy))
             }
+            ItemType::IronAxe => entity_commands.insert(Damage::new(7)),
+            ItemType::BlessedAxe => entity_commands.insert((Damage::new(6), Hearties::new(2))),
+            ItemType::CursedAxe => entity_commands.insert((Damage::new(11), Cursed::new(2))),
             ItemType::Flag => entity_commands.insert((Heave::new(
                 2,
                 AbilityTarget {
@@ -287,45 +329,48 @@ impl ItemType {
             ),)),
             ItemType::Grog => entity_commands.insert((SeaLegs::new(3), Consumable(3))),
             ItemType::JewelOfTheSea => entity_commands.insert((Swashbuckle::new(
-                1,
+                2,
                 AbilityTarget::with_all_attributes(TargetFilter::All),
             ),)),
             ItemType::JewelOfLife => entity_commands.insert((Jolly::new(
-                1,
+                2,
                 AbilityTarget::with_all_attributes(TargetFilter::All),
             ),)),
-            ItemType::JewelOfTheEarth => entity_commands.insert(Vitality::new(3)),
+            ItemType::JewelOfTheEarth => {
+                entity_commands.insert((Vitality::new(4), Hearties::new(4)))
+            }
             ItemType::CursedJewel => entity_commands.insert((
-                Cursed::new(2),
-                Heave::new(1, AbilityTarget::with_all_attributes(TargetFilter::All)),
+                Cursed::new(1),
+                Heave::new(2, AbilityTarget::with_all_attributes(TargetFilter::All)),
             )),
             ItemType::Orange => entity_commands.insert((
                 Hearties::new(7),
+                Vitality::new(2),
                 Cannonball {
                     load_amount: 1,
                     target: AbilityTarget {
-                        filter: TargetFilter::Prev(1),
+                        filter: TargetFilter::Next(1),
                         attribute: FLINTLOCK.to_string(),
                     },
                 },
                 Consumable(1),
             )),
             ItemType::BagOfBeans => entity_commands.insert((
-                Hearties::new(2),
+                Hearties::new(5),
                 Vitality::new(1),
                 Pellets {
-                    load_amount: 1,
+                    load_amount: 4,
                     target: AbilityTarget {
-                        filter: TargetFilter::AllPrev,
+                        filter: TargetFilter::Next(1),
                         attribute: FLINTLOCK.to_string(),
                     },
                 },
                 Consumable(2),
             )),
             ItemType::MurkyBroth => entity_commands.insert((
-                Cursed::new(2),
-                Vitality::new(4),
-                SeaLegs::new(1),
+                Cursed::new(1),
+                Vitality::new(5),
+                SeaLegs::new(2),
                 Consumable(1),
             )),
             ItemType::Blunderbuss => {
@@ -333,7 +378,7 @@ impl ItemType {
             }
             ItemType::BagOfPellets => entity_commands.insert((
                 Pellets {
-                    load_amount: 2,
+                    load_amount: 4,
                     target: AbilityTarget {
                         filter: TargetFilter::AllNext,
                         attribute: FLINTLOCK.to_string(),
@@ -347,7 +392,7 @@ impl ItemType {
                 Cannonball {
                     load_amount: 1,
                     target: AbilityTarget {
-                        filter: TargetFilter::Next(1),
+                        filter: TargetFilter::AllNext,
                         attribute: FLINTLOCK.to_string(),
                     },
                 },
@@ -355,9 +400,9 @@ impl ItemType {
             )),
             ItemType::ChainShot => entity_commands.insert((
                 Cannonball {
-                    load_amount: 1,
+                    load_amount: 2,
                     target: AbilityTarget {
-                        filter: TargetFilter::Prev(2),
+                        filter: TargetFilter::AllNext,
                         attribute: FLINTLOCK.to_string(),
                     },
                 },
@@ -376,7 +421,9 @@ impl ItemType {
                 Swashbuckle::new(6, AbilityTarget::with_all_attributes(TargetFilter::All)),
                 Consumable(1),
             )),
-            ItemType::VialOfTheEarth => entity_commands.insert((Vitality::new(6), Consumable(1))),
+            ItemType::VialOfTheEarth => {
+                entity_commands.insert((Vitality::new(6), Hearties::new(6), Consumable(1)))
+            }
         };
     }
 }

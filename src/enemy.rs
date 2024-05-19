@@ -43,8 +43,8 @@ pub struct EnemyBundle {
 
 impl EnemyBundle {
     fn from_battle_wins(battle_wins: &BattleWins) -> Self {
-        let hp = Hp::new(6 + battle_wins.0 as i32 * 3);
-        let damage = Damage::new((3 as f32 + battle_wins.0 as f32 * 0.5) as i32);
+        let hp = Hp::new(6 + 3 * (battle_wins.0 as f32).powf(1.1) as i32);
+        let damage = Damage::new((3 as f32 + battle_wins.0 as f32 * 0.1) as i32);
 
         Self {
             enemy: Enemy,

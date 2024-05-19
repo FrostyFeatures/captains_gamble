@@ -56,7 +56,7 @@ fn main() {
         .add_plugins(UiMaterialPlugin::<TextUIMaterial>::default())
         .add_plugins(UIPlugin)
         .add_plugins(ScenePlugin)
-        // .add_plugins(MusicPlugin)
+        .add_plugins(MusicPlugin)
         .add_plugins(PlayerPlugin)
         .add_plugins(EnemyPlugin)
         .add_plugins(ItemPlugin)

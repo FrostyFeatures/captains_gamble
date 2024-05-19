@@ -240,7 +240,11 @@ impl Swashbuckle {
 
 impl Ability for Swashbuckle {
     fn name(&self) -> String {
-        "Swashbuckle".to_string()
+        format!(
+            "Swashbuckle ({} {})",
+            self.target.filter.name(),
+            self.target.attribute
+        )
     }
 
     fn base(&self) -> i32 {
@@ -292,7 +296,11 @@ impl Jolly {
 
 impl Ability for Jolly {
     fn name(&self) -> String {
-        "Jolly".to_string()
+        format!(
+            "Jolly ({} {})",
+            self.target.filter.name(),
+            self.target.attribute
+        )
     }
 
     fn base(&self) -> i32 {
