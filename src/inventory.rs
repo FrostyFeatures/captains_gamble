@@ -79,15 +79,17 @@ fn spawn_loot(
     commands
         .entity(loot_scroll_q.single())
         .with_children(|parent| {
-            // ItemType::WoodenSword.spawn(parent, &game_sprites);
-            // ItemType::Grog.spawn(parent, &game_sprites);
-            // ItemType::Orange.spawn(parent, &game_sprites);
+            ItemType::WoodenSword.spawn(parent, &game_sprites);
+            ItemType::WoodenSword.spawn(parent, &game_sprites);
+            ItemType::WoodenSword.spawn(parent, &game_sprites);
+            ItemType::Grog.spawn(parent, &game_sprites);
+            ItemType::Orange.spawn(parent, &game_sprites);
             // ItemType::Spyglass.spawn(parent, &game_sprites);
             // ItemType::BlessedCutlass.spawn(parent, &game_sprites);
-            ItemType::Cannon.spawn(parent, &game_sprites);
-            ItemType::Cannonball.spawn(parent, &game_sprites);
-            ItemType::ChainShot.spawn(parent, &game_sprites);
-            ItemType::Orange.spawn(parent, &game_sprites);
+            // ItemType::Cannon.spawn(parent, &game_sprites);
+            // ItemType::Cannonball.spawn(parent, &game_sprites);
+            // ItemType::ChainShot.spawn(parent, &game_sprites);
+            // ItemType::Orange.spawn(parent, &game_sprites);
         });
 }
 

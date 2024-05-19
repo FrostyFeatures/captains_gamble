@@ -43,10 +43,6 @@ impl Plugin for BattlePlugin {
             .add_systems(OnEnter(AppState::Battling), setup_battle)
             .add_systems(OnExit(AppState::Battling), cleanup_battle)
             .add_systems(
-                OnExit(BattleState::PlayerTurn),
-                (on_player_turn_end,).run_if(in_state(AppState::Battling)),
-            )
-            .add_systems(
                 OnExit(BattleState::EnemyTurn),
                 (check_battle_end,).run_if(in_state(AppState::Battling)),
             )
@@ -68,6 +64,7 @@ impl Plugin for BattlePlugin {
                     handle_jolly_use,
                     handle_pellets_use,
                     handle_cannonball_use,
+                    handle_consumable_use,
                     update_scroll_marker_pos,
                     update_scroll_marker_ui_pos,
                     animate_scroll_marker,
@@ -194,36 +191,6 @@ fn player_turn_use_item(
     }
 }
 
-fn on_player_turn_end(
-    mut commands: Commands,
-    scroll_q: Query<&Children, With<InventoryScrollUI>>,
-    scroll_marker_q: Query<(Entity, &ScrollMarker)>,
-    consumables_q: Query<&Consumable>,
-) {
-    let (scroll_m_e, scroll_marker) = scroll_marker_q.single();
-    let Ok(children) = scroll_q.get_single() else {
-        return;
-    };
-    let Some(used_item) = children.get(scroll_marker.0) else {
-        return;
-    };
-
-    if let Ok(consumable) = consumables_q.get(*used_item) {
-        if consumable.0 <= 0 {
-            if children.len() <= 1 {
-                commands.entity(scroll_m_e).remove_parent();
-            } else {
-                commands.entity(scroll_m_e).set_parent(
-                    *children
-                        .get((scroll_marker.0 + 1) % children.len())
-                        .unwrap(),
-                );
-            }
-            commands.entity(*used_item).despawn_recursive();
-        }
-    }
-}
-
 fn start_enemy_turn(mut commands: Commands) {
     commands.spawn(EnemyTurnTimer(Timer::new(
         Duration::from_secs_f32(0.5),
@@ -298,25 +265,25 @@ fn update_scroll_marker_pos(
         return;
     };
     for UseItem { consumed, .. } in use_item_er.read() {
-        if *consumed {
-            continue;
+        if !*consumed {
+            scroll_marker.0 += 1;
         }
-        scroll_marker.0 = (scroll_marker.0 + 1) % scroll_q.single().len();
+        scroll_marker.0 %= scroll_q.single().len();
     }
 }
 
 fn update_scroll_marker_ui_pos(
     mut commands: Commands,
-    scroll_marker_q: Query<(Entity, &ScrollMarker), Changed<ScrollMarker>>,
+    scroll_marker_q: Query<(Entity, &ScrollMarker)>,
     scroll_q: Query<&Children, With<InventoryScrollUI>>,
 ) {
     let Ok((entity, scroll_marker)) = scroll_marker_q.get_single() else {
         return;
     };
-    let index = scroll_marker.0;
     let Ok(children) = scroll_q.get_single() else {
         return;
     };
+    let index = scroll_marker.0 % children.len();
     if children.len() > 0 {
         commands
             .entity(entity)
@@ -616,6 +583,28 @@ fn handle_cannonball_use(
                     flintlock.load(cannonball.load_amount);
                 }
             }
+        }
+    }
+}
+
+fn handle_consumable_use(
+    mut commands: Commands,
+    scroll_marker_q: Query<(Entity, &ScrollMarker)>,
+    scroll_q: Query<&Children, With<InventoryScrollUI>>,
+    consumables_q: Query<&Consumable>,
+) {
+    let (scroll_m_e, scroll_marker) = scroll_marker_q.single();
+    let Ok(children) = scroll_q.get_single() else {
+        return;
+    };
+    let Some(used_item) = children.get(scroll_marker.0) else {
+        return;
+    };
+
+    if let Ok(consumable) = consumables_q.get(*used_item) {
+        if consumable.0 <= 0 {
+            commands.entity(scroll_m_e).remove_parent();
+            commands.entity(*used_item).despawn_recursive();
         }
     }
 }
