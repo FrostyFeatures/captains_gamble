@@ -76,7 +76,7 @@ pub enum TargetFilter {
 }
 
 impl TargetFilter {
-    fn name(&self) -> String {
+    pub fn name(&self) -> String {
         match self {
             TargetFilter::All => "ALL".to_string(),
             TargetFilter::Next(n) => format!("NEXT {n}"),

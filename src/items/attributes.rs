@@ -117,7 +117,14 @@ impl Attribute for Pellets {
 
 impl TooltipComponent for Pellets {
     fn get_tooltip_section(&self) -> TooltipSection {
-        self._get_tooltip_section()
+        let text = format!(
+            "{} (Loads {} [{}] {})",
+            self.name(),
+            self.load_amount,
+            self.target.filter.name(),
+            self.target.attribute,
+        );
+        TooltipSection::default_color(text, TooltipSectionIndex::Footer)
     }
 }
 
@@ -135,6 +142,13 @@ impl Attribute for Cannonball {
 
 impl TooltipComponent for Cannonball {
     fn get_tooltip_section(&self) -> TooltipSection {
-        self._get_tooltip_section()
+        let text = format!(
+            "{} (Loads {} [{}] {})",
+            self.name(),
+            self.load_amount,
+            self.target.filter.name(),
+            self.target.attribute,
+        );
+        TooltipSection::default_color(text, TooltipSectionIndex::Footer)
     }
 }

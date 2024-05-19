@@ -84,8 +84,10 @@ fn spawn_loot(
             // ItemType::Orange.spawn(parent, &game_sprites);
             // ItemType::Spyglass.spawn(parent, &game_sprites);
             // ItemType::BlessedCutlass.spawn(parent, &game_sprites);
-            ItemType::Blunderbuss.spawn(parent, &game_sprites);
-            ItemType::BagOfPellets.spawn(parent, &game_sprites);
+            ItemType::Cannon.spawn(parent, &game_sprites);
+            ItemType::Cannonball.spawn(parent, &game_sprites);
+            ItemType::ChainShot.spawn(parent, &game_sprites);
+            ItemType::Orange.spawn(parent, &game_sprites);
         });
 }
 

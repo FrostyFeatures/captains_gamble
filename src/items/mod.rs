@@ -19,8 +19,8 @@ pub mod abilities;
 pub mod attributes;
 
 const MUNDANGE_ITEMS: &[ItemType] = &[
-    ItemType::BagOfPellets,
     ItemType::Orange,
+    ItemType::BagOfBeans,
     ItemType::Grog,
     ItemType::WoodenSword,
 ];
@@ -31,6 +31,10 @@ const SCARCE_ITEMS: &[ItemType] = &[
     ItemType::Flag,
     ItemType::Spyglass,
     ItemType::Blunderbuss,
+    ItemType::BagOfPellets,
+    ItemType::Cannon,
+    ItemType::Cannonball,
+    ItemType::MurkyBroth,
 ];
 
 const PRECIOUS_ITEMS: &[ItemType] = &[
@@ -38,6 +42,11 @@ const PRECIOUS_ITEMS: &[ItemType] = &[
     ItemType::BlessedCutlass,
     ItemType::CursedSword,
     ItemType::CursedCutlass,
+    ItemType::ChainShot,
+    ItemType::CursedVial,
+    ItemType::VialOfLife,
+    ItemType::VialOfTheSea,
+    ItemType::VialOfTheEarth,
 ];
 
 const MYTHIC_ITEMS: &[ItemType] = &[
@@ -289,10 +298,30 @@ impl ItemType {
                 Cursed::new(2),
                 Heave::new(1, AbilityTarget::with_all_attributes(TargetFilter::All)),
             )),
-            ItemType::Orange => entity_commands.insert((Hearties::new(7), Consumable(1))),
-            ItemType::BagOfBeans => entity_commands.insert((Hearties::new(4), Consumable(2))),
+            ItemType::Orange => entity_commands.insert((
+                Hearties::new(7),
+                Cannonball {
+                    load_amount: 1,
+                    target: AbilityTarget {
+                        filter: TargetFilter::Prev(1),
+                        attribute: FLINTLOCK.to_string(),
+                    },
+                },
+                Consumable(1),
+            )),
+            ItemType::BagOfBeans => entity_commands.insert((
+                Hearties::new(4),
+                Pellets {
+                    load_amount: 1,
+                    target: AbilityTarget {
+                        filter: TargetFilter::AllPrev,
+                        attribute: FLINTLOCK.to_string(),
+                    },
+                },
+                Consumable(2),
+            )),
             ItemType::MurkyBroth => {
-                entity_commands.insert((Hearties::new(3), SeaLegs::new(1), Consumable(2)))
+                entity_commands.insert((Hearties::new(5), SeaLegs::new(1), Consumable(2)))
             }
             ItemType::Blunderbuss => {
                 entity_commands.insert((Flintlock::empty(PELLETS.to_string(), 8), Damage::new(15)))
@@ -308,7 +337,7 @@ impl ItemType {
                 Consumable(6),
             )),
             ItemType::Cannon => entity_commands
-                .insert((Flintlock::empty(CANNONBALL.to_string(), 27), Damage::new(5))),
+                .insert((Flintlock::empty(CANNONBALL.to_string(), 2), Damage::new(27))),
             ItemType::Cannonball => entity_commands.insert((
                 Cannonball {
                     load_amount: 1,

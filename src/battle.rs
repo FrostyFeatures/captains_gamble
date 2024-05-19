@@ -1,6 +1,6 @@
-use std::{borrow::BorrowMut, time::Duration};
+use std::time::Duration;
 
-use bevy::{animation::prelude, prelude::*};
+use bevy::prelude::*;
 
 use crate::{
     assets::{GameSprites, ICON_INDEX_SCROLL_MARKER},
@@ -9,7 +9,7 @@ use crate::{
     inventory::InventoryScrollUI,
     items::{
         abilities::{Ability, Cursed, Damage, Hearties, Heave, Jolly, SeaLegs, Swashbuckle},
-        attributes::{Attribute, Flintlock, Pellets},
+        attributes::{Attribute, Cannonball, Flintlock, Pellets},
         Consumable,
     },
     // log::LogMessageEvent,
@@ -67,6 +67,7 @@ impl Plugin for BattlePlugin {
                     handle_swashbuckle_use,
                     handle_jolly_use,
                     handle_pellets_use,
+                    handle_cannonball_use,
                     update_scroll_marker_pos,
                     update_scroll_marker_ui_pos,
                     animate_scroll_marker,
@@ -576,6 +577,43 @@ fn handle_pellets_use(
             if let Ok(mut flintlock) = flintlock_q.get_mut(flintlock_e) {
                 if flintlock.can_load(&pellets.name().to_string()) {
                     flintlock.load(pellets.load_amount);
+                }
+            }
+        }
+    }
+}
+
+fn handle_cannonball_use(
+    mut use_item_er: EventReader<UseItem>,
+    mut flintlock_q: Query<&mut Flintlock>,
+    cannonball_q: Query<&Cannonball>,
+    scroll_q: Query<&Children, With<InventoryScrollUI>>,
+) {
+    let Ok(scroll_children) = scroll_q.get_single() else {
+        return;
+    };
+    for item_e in use_item_er.read() {
+        let Ok(cannonball) = cannonball_q.get(item_e.item) else {
+            continue;
+        };
+        let i = scroll_children
+            .iter()
+            .enumerate()
+            .filter(|(_, &c)| c == item_e.item)
+            .map(|(i, _)| i)
+            .next();
+        let Some(scroll_pos) = i else {
+            continue;
+        };
+        let targets =
+            cannonball
+                .target
+                .filter
+                .get_targets(scroll_pos, item_e.item, scroll_children.iter());
+        for &flintlock_e in targets.iter() {
+            if let Ok(mut flintlock) = flintlock_q.get_mut(flintlock_e) {
+                if flintlock.can_load(&cannonball.name().to_string()) {
+                    flintlock.load(cannonball.load_amount);
                 }
             }
         }
