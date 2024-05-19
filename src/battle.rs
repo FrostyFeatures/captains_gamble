@@ -8,7 +8,7 @@ use crate::{
     enemy::{Enemy, ENEMY_DAMAGE},
     inventory::InventoryScrollUI,
     items::{
-        abilities::{Ability, Damage, Heave, Jolly, SeaLegs, Squiffy},
+        abilities::{Ability, Cursed, Damage, Heave, Jolly, SeaLegs},
         attributes::Attribute,
         Consumable,
     },
@@ -61,7 +61,7 @@ impl Plugin for BattlePlugin {
                     player_turn_use_item,
                     handle_damage_use,
                     handle_jolly_use,
-                    handle_squiffy_use,
+                    handle_cursed_use,
                     handle_heave_use,
                     handle_sea_legs_use,
                     update_scroll_marker_pos,
@@ -368,21 +368,21 @@ fn handle_jolly_use(
     }
 }
 
-fn handle_squiffy_use(
+fn handle_cursed_use(
     // mut log_message_ew: EventWriter<LogMessageEvent>,
     mut battle_event_ew: EventWriter<BattleEvent>,
     mut use_item_ev: EventReader<UseItem>,
     mut player_hp_q: Query<&mut Hp, With<Player>>,
-    squiffy_q: Query<&Squiffy>,
+    cursed_q: Query<&Cursed>,
 ) {
     let Ok(mut player_hp) = player_hp_q.get_single_mut() else {
         return;
     };
     for item_e in use_item_ev.read() {
-        let Ok(squiffy) = squiffy_q.get(item_e.item) else {
+        let Ok(cursed) = cursed_q.get(item_e.item) else {
             continue;
         };
-        let amount = squiffy.amount();
+        let amount = cursed.amount();
         battle_event_ew.send(BattleEvent::PlayerHurt(amount));
         // log_message_ew.send(LogMessageEvent(format!(
         //     "Self-inflicted {} health!",
@@ -427,7 +427,7 @@ fn handle_heave_use(
                     .iter()
                     .any(|a| a.name() == heave.target.attribute)
                 {
-                    damage.modifiers.entry(item_e.item).or_default().amount += amount;
+                    damage.modifier.amount += amount;
                 }
             }
         }

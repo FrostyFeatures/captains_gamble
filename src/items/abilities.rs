@@ -1,6 +1,6 @@
-use bevy::{prelude::*, utils::HashMap};
+use bevy::prelude::*;
 
-use crate::tooltip::{TooltipComponent, TooltipSection};
+use crate::tooltip::{TooltipComponent, TooltipSection, TooltipSectionIndex};
 
 pub(super) struct AbilityPlugin;
 
@@ -8,19 +8,11 @@ impl Plugin for AbilityPlugin {
     fn build(&self, app: &mut App) {
         use bevy_trait_query::RegisterExt;
 
-        app.register_component_as::<dyn TooltipComponent, Damage>();
-        app.register_component_as::<dyn TooltipComponent, Jolly>();
-        app.register_component_as::<dyn TooltipComponent, Squiffy>();
-        app.register_component_as::<dyn TooltipComponent, Heave>();
-        app.register_component_as::<dyn TooltipComponent, SeaLegs>();
-
         app.register_component_as::<dyn Ability, Damage>();
         app.register_component_as::<dyn Ability, Jolly>();
-        app.register_component_as::<dyn Ability, Squiffy>();
+        app.register_component_as::<dyn Ability, Cursed>();
         app.register_component_as::<dyn Ability, Heave>();
         app.register_component_as::<dyn Ability, SeaLegs>();
-
-        // app.add_systems(OnExit(AppState::Battling), clear_ability_modifiers);
     }
 }
 
@@ -29,20 +21,14 @@ pub struct AbilityModifier {
     pub amount: i32,
 }
 
-pub type AbilityModifiers = HashMap<Entity, AbilityModifier>;
-
 #[bevy_trait_query::queryable]
 pub trait Ability {
     fn name(&self) -> String;
     fn base(&self) -> i32;
-    fn modifiers(&self) -> &AbilityModifiers;
-    fn modifiers_mut(&mut self) -> &mut AbilityModifiers;
+    fn modifier(&self) -> &AbilityModifier;
+    fn modifier_mut(&mut self) -> &mut AbilityModifier;
     fn amount(&self) -> i32 {
-        self.base()
-            + self
-                .modifiers()
-                .iter()
-                .fold(0, |sum, (_, m)| sum + m.amount)
+        self.base() + self.modifier().amount
     }
 }
 
@@ -52,14 +38,16 @@ where
 {
     fn get_tooltip_section(&self) -> TooltipSection {
         let mut text = format!("{} {}", self.name(), self.base());
-        for (_, modifier) in self.modifiers().iter() {
-            if modifier.amount > 0 {
-                text.push_str(format!("\n\t+{}", modifier.amount).as_str());
-            } else if modifier.amount <= 0 {
-                text.push_str(format!("\n\t{}", modifier.amount).as_str());
-            }
+        let amount = self.modifier().amount;
+        if amount > 0 {
+            text.push_str(format!("\n\t+{}", amount).as_str());
+        } else if amount < 0 {
+            text.push_str(format!("\n\t{}", amount).as_str());
         }
-        TooltipSection { text, index: 1 }
+        TooltipSection {
+            text,
+            index: TooltipSectionIndex::Body,
+        }
     }
 }
 
@@ -117,18 +105,10 @@ impl TargetFilter {
     }
 }
 
-fn clear_ability_modifiers(mut abilities_q: Query<&mut dyn Ability>) {
-    for mut foo in abilities_q.iter_mut() {
-        for mut bar in foo.iter_mut() {
-            *bar.modifiers_mut() = AbilityModifiers::default();
-        }
-    }
-}
-
 #[derive(Component, Default, Debug, Clone)]
 pub struct Damage {
     pub base: i32,
-    pub modifiers: AbilityModifiers,
+    pub modifier: AbilityModifier,
 }
 
 impl Damage {
@@ -146,19 +126,19 @@ impl Ability for Damage {
         self.base
     }
 
-    fn modifiers(&self) -> &AbilityModifiers {
-        &self.modifiers
+    fn modifier(&self) -> &AbilityModifier {
+        &self.modifier
     }
 
-    fn modifiers_mut(&mut self) -> &mut AbilityModifiers {
-        &mut self.modifiers
+    fn modifier_mut(&mut self) -> &mut AbilityModifier {
+        &mut self.modifier
     }
 }
 
 #[derive(Component, Default, Debug, Clone)]
 pub struct Jolly {
     pub base: i32,
-    pub modifiers: AbilityModifiers,
+    pub modifier: AbilityModifier,
 }
 
 impl Jolly {
@@ -176,55 +156,59 @@ impl Ability for Jolly {
         self.base
     }
 
-    fn modifiers(&self) -> &AbilityModifiers {
-        &self.modifiers
+    fn modifier(&self) -> &AbilityModifier {
+        &self.modifier
     }
 
-    fn modifiers_mut(&mut self) -> &mut AbilityModifiers {
-        &mut self.modifiers
+    fn modifier_mut(&mut self) -> &mut AbilityModifier {
+        &mut self.modifier
     }
 }
 
 #[derive(Component, Default, Debug, Clone)]
-pub struct Squiffy {
+pub struct Cursed {
     pub base: i32,
-    pub modifiers: AbilityModifiers,
+    pub modifier: AbilityModifier,
 }
 
-impl Squiffy {
+impl Cursed {
     pub fn new(base: i32) -> Self {
         Self { base, ..default() }
     }
 }
 
-impl Ability for Squiffy {
+impl Ability for Cursed {
     fn name(&self) -> String {
-        "Squiffy".to_string()
+        "Cursed".to_string()
     }
 
     fn base(&self) -> i32 {
         self.base
     }
 
-    fn modifiers(&self) -> &AbilityModifiers {
-        &self.modifiers
+    fn modifier(&self) -> &AbilityModifier {
+        &self.modifier
     }
 
-    fn modifiers_mut(&mut self) -> &mut AbilityModifiers {
-        &mut self.modifiers
+    fn modifier_mut(&mut self) -> &mut AbilityModifier {
+        &mut self.modifier
     }
 }
 
 #[derive(Component, Default, Clone, Debug)]
 pub struct Heave {
     pub base: i32,
-    pub modifiers: AbilityModifiers,
+    pub modifier: AbilityModifier,
     pub target: AbilityTarget,
 }
 
 impl Heave {
     pub fn new(base: i32, target: AbilityTarget) -> Self {
-        Self { base, ..default() }
+        Self {
+            base,
+            target,
+            ..default()
+        }
     }
 }
 
@@ -241,19 +225,19 @@ impl Ability for Heave {
         self.base
     }
 
-    fn modifiers(&self) -> &AbilityModifiers {
-        &self.modifiers
+    fn modifier(&self) -> &AbilityModifier {
+        &self.modifier
     }
 
-    fn modifiers_mut(&mut self) -> &mut AbilityModifiers {
-        &mut self.modifiers
+    fn modifier_mut(&mut self) -> &mut AbilityModifier {
+        &mut self.modifier
     }
 }
 
 #[derive(Component, Default, Clone, Debug)]
 pub struct SeaLegs {
     pub base: i32,
-    pub modifiers: AbilityModifiers,
+    pub modifier: AbilityModifier,
 }
 
 impl SeaLegs {
@@ -271,11 +255,11 @@ impl Ability for SeaLegs {
         self.base
     }
 
-    fn modifiers(&self) -> &AbilityModifiers {
-        &self.modifiers
+    fn modifier(&self) -> &AbilityModifier {
+        &self.modifier
     }
 
-    fn modifiers_mut(&mut self) -> &mut AbilityModifiers {
-        &mut self.modifiers
+    fn modifier_mut(&mut self) -> &mut AbilityModifier {
+        &mut self.modifier
     }
 }

@@ -1,25 +1,37 @@
-use bevy::{
-    prelude::*,
-    render::render_resource::{AsBindGroup, ShaderRef},
-    ui::RelativeCursorPosition,
-    window::PrimaryWindow,
-};
+use bevy::{prelude::*, text, ui::RelativeCursorPosition, window::PrimaryWindow};
 
 use crate::{
     assets::{GameFonts, GameMaterials},
     common::Name,
-    items::Consumable,
+    items::{
+        abilities::{Cursed, Damage, Heave, Jolly, SeaLegs},
+        attributes::Pointy,
+        Consumable,
+    },
     AppState,
 };
 
-const FONT_SIZE: f32 = 4.;
-const FONT_COLOR: Color = Color::WHITE;
+const HEADER_SIZE: f32 = 6.;
+const BODY_SIZE: f32 = 4.;
+const FOOTER_SIZE: f32 = 4.;
+
+const HEADER_FONT_COLOR: Color = Color::WHITE;
+const BODY_FONT_COLOR: Color = Color::WHITE;
+const FOOTER_FONT_COLOR: Color = Color::GRAY;
 
 pub struct TooltipPlugin;
 
 impl Plugin for TooltipPlugin {
     fn build(&self, app: &mut App) {
         use bevy_trait_query::RegisterExt;
+
+        app.register_component_as::<dyn TooltipComponent, Damage>();
+        app.register_component_as::<dyn TooltipComponent, Jolly>();
+        app.register_component_as::<dyn TooltipComponent, Cursed>();
+        app.register_component_as::<dyn TooltipComponent, Heave>();
+        app.register_component_as::<dyn TooltipComponent, SeaLegs>();
+
+        app.register_component_as::<dyn TooltipComponent, Pointy>();
 
         app.register_component_as::<dyn TooltipComponent, Name>();
         app.register_component_as::<dyn TooltipComponent, Consumable>();
@@ -45,10 +57,35 @@ pub enum Tooltipable {
     Disabled,
 }
 
+#[derive(PartialOrd, Ord, PartialEq, Eq, Debug)]
+pub enum TooltipSectionIndex {
+    Header,
+    Body,
+    Footer,
+}
+
+impl TooltipSectionIndex {
+    fn color(&self) -> Color {
+        match self {
+            TooltipSectionIndex::Header => HEADER_FONT_COLOR,
+            TooltipSectionIndex::Body => BODY_FONT_COLOR,
+            TooltipSectionIndex::Footer => FOOTER_FONT_COLOR,
+        }
+    }
+
+    fn font_size(&self) -> f32 {
+        match self {
+            TooltipSectionIndex::Header => HEADER_SIZE,
+            TooltipSectionIndex::Body => BODY_SIZE,
+            TooltipSectionIndex::Footer => FOOTER_SIZE,
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct TooltipSection {
     pub text: String,
-    pub index: i32,
+    pub index: TooltipSectionIndex,
 }
 
 #[derive(Component, Debug)]
@@ -88,8 +125,8 @@ impl Tooltip {
                         text: Text::from_section(
                             text_section.text.clone(),
                             TextStyle {
-                                color: FONT_COLOR,
-                                font_size: FONT_SIZE,
+                                color: text_section.index.color(),
+                                font_size: text_section.index.font_size(),
                                 font: game_fonts.font.clone(),
                                 ..default()
                             },

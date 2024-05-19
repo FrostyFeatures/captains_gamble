@@ -2,13 +2,7 @@ use bevy::{prelude::*, ui::RelativeCursorPosition, window::PrimaryWindow};
 
 use crate::{
     assets::{GameFonts, GameSprites},
-    items::{
-        cutlass::{Cutlass, CutlassType},
-        flag::Flag,
-        grog::Grog,
-        spyglass::Spyglass,
-        Item, ItemType,
-    },
+    items::{Item, ItemType},
     tooltip::Tooltipable,
     ui::{BottomCenterUI, BottomRightUI, TopInventoryUI, FONT_COLOR},
     AppState,
@@ -87,6 +81,7 @@ fn spawn_loot(
         .with_children(|parent| {
             ItemType::WoodenSword.spawn(parent, &game_sprites);
             ItemType::Grog.spawn(parent, &game_sprites);
+            ItemType::CursedJewel.spawn(parent, &game_sprites);
         });
 }
 

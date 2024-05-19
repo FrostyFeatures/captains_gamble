@@ -4,37 +4,21 @@ use crate::{
     assets::GameSprites,
     common::Name,
     inventory::Draggable,
-    items::{
-        abilities::AbilityPlugin, attributes::AttributePlugin, cutlass::Cutlass, flag::Flag,
-        grog::Grog, spyglass::Spyglass, sword::Sword,
-    },
-    tooltip::{TooltipComponent, TooltipSection, Tooltipable},
+    items::{abilities::AbilityPlugin, attributes::AttributePlugin},
+    tooltip::{TooltipComponent, TooltipSection, TooltipSectionIndex, Tooltipable},
 };
 
 use self::{
-    abilities::{AbilityTarget, Damage, Heave, Jolly, SeaLegs, Squiffy, TargetFilter},
+    abilities::{AbilityTarget, Cursed, Damage, Heave, Jolly, SeaLegs, TargetFilter},
     attributes::{Pointy, POINTY},
 };
 pub mod abilities;
 pub mod attributes;
-pub mod cutlass;
-pub mod flag;
-pub mod grog;
-pub mod spyglass;
-pub mod sword;
 
 pub struct ItemPlugin;
 
 impl Plugin for ItemPlugin {
     fn build(&self, app: &mut App) {
-        use bevy_trait_query::RegisterExt;
-
-        app.register_component_as::<dyn Item, Sword>();
-        app.register_component_as::<dyn Item, Cutlass>();
-        app.register_component_as::<dyn Item, Flag>();
-        app.register_component_as::<dyn Item, Spyglass>();
-        app.register_component_as::<dyn Item, Grog>();
-
         app.add_plugins((AbilityPlugin, AttributePlugin));
     }
 }
@@ -51,6 +35,10 @@ pub enum ItemType {
     Flag,
     Spyglass,
     Grog,
+    JewelOfTheSea,   // + sea legs
+    JewelOfLife,     // + jolly
+    JewelOfTheEarth, // + ??
+    CursedJewel,     // Cursed, + Damage
 }
 
 impl ItemType {
@@ -66,6 +54,10 @@ impl ItemType {
             ItemType::Flag => 31,
             ItemType::Spyglass => 23,
             ItemType::Grog => 33,
+            ItemType::JewelOfTheSea => 36,
+            ItemType::JewelOfLife => 35,
+            ItemType::JewelOfTheEarth => 37,
+            ItemType::CursedJewel => 34,
         }
     }
 
@@ -81,6 +73,10 @@ impl ItemType {
             ItemType::Flag => "Flag".to_string(),
             ItemType::Spyglass => "Spyglass".to_string(),
             ItemType::Grog => "Grog".to_string(),
+            ItemType::JewelOfTheSea => "Jewel of the Sea".to_string(),
+            ItemType::JewelOfLife => "Jewel of Life".to_string(),
+            ItemType::JewelOfTheEarth => "Jewel of the Earth".to_string(),
+            ItemType::CursedJewel => "Cursed Jewel".to_string(),
         }
     }
 
@@ -116,7 +112,7 @@ impl ItemType {
                 entity_commands.insert((Damage::new(4), Jolly::new(2), Pointy))
             }
             ItemType::CursedSword => {
-                entity_commands.insert((Damage::new(8), Squiffy::new(2), Pointy))
+                entity_commands.insert((Damage::new(8), Cursed::new(2), Pointy))
             }
             ItemType::IronCutlass => {
                 entity_commands.insert((Damage::new(3), SeaLegs::new(1), Pointy))
@@ -125,7 +121,7 @@ impl ItemType {
                 entity_commands.insert((Damage::new(2), SeaLegs::new(1), Jolly::new(1), Pointy))
             }
             ItemType::CursedCutlass => {
-                entity_commands.insert((Damage::new(5), SeaLegs::new(2), Squiffy::new(2), Pointy))
+                entity_commands.insert((Damage::new(5), SeaLegs::new(2), Cursed::new(2), Pointy))
             }
             ItemType::Flag => entity_commands.insert((Heave::new(
                 2,
@@ -142,6 +138,19 @@ impl ItemType {
                 },
             ),)),
             ItemType::Grog => entity_commands.insert((SeaLegs::new(3), Consumable(3))),
+            ItemType::JewelOfTheSea => todo!(),
+            ItemType::JewelOfLife => todo!(),
+            ItemType::JewelOfTheEarth => todo!(),
+            ItemType::CursedJewel => entity_commands.insert((
+                Cursed::new(2),
+                Heave::new(
+                    1,
+                    AbilityTarget {
+                        filter: TargetFilter::All,
+                        attribute: POINTY.to_string(),
+                    },
+                ),
+            )),
         };
     }
 }
@@ -159,7 +168,7 @@ impl TooltipComponent for Consumable {
     fn get_tooltip_section(&self) -> TooltipSection {
         TooltipSection {
             text: format!("Consumable {}", self.0),
-            index: i32::MAX,
+            index: TooltipSectionIndex::Body,
         }
     }
 }

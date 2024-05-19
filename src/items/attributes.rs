@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::tooltip::{TooltipComponent, TooltipSection};
+use crate::tooltip::{TooltipComponent, TooltipSection, TooltipSectionIndex};
 
 pub(super) struct AttributePlugin;
 
@@ -10,7 +10,6 @@ impl Plugin for AttributePlugin {
     fn build(&self, app: &mut App) {
         use bevy_trait_query::RegisterExt;
 
-        app.register_component_as::<dyn TooltipComponent, Pointy>();
         app.register_component_as::<dyn Attribute, Pointy>();
     }
 }
@@ -20,7 +19,10 @@ pub trait Attribute: TooltipComponent {
     fn name(&self) -> &'static str;
     fn _get_tooltip_section(&self) -> TooltipSection {
         let text = format!("{}", self.name());
-        TooltipSection { text, index: 2 }
+        TooltipSection {
+            text,
+            index: TooltipSectionIndex::Footer,
+        }
     }
 }
 

@@ -2,7 +2,7 @@ use core::fmt;
 
 use bevy::prelude::*;
 
-use crate::tooltip::{TooltipComponent, TooltipSection};
+use crate::tooltip::{TooltipComponent, TooltipSection, TooltipSectionIndex};
 
 #[derive(Component, Clone, Debug)]
 pub struct Name(pub String);
@@ -11,7 +11,7 @@ impl TooltipComponent for Name {
     fn get_tooltip_section(&self) -> TooltipSection {
         TooltipSection {
             text: self.0.clone(),
-            index: 0,
+            index: TooltipSectionIndex::Header,
         }
     }
 }
