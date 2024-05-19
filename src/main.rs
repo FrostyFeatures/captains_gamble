@@ -8,6 +8,7 @@ mod log;
 mod music;
 mod numoids;
 mod player;
+mod rng;
 mod scene;
 mod tooltip;
 mod ui;
@@ -25,7 +26,7 @@ use items::ItemPlugin;
 use music::MusicPlugin;
 use numoids::NumoidPlugin;
 use player::PlayerPlugin;
-use rand::rngs::ThreadRng;
+use rng::RngPlugin;
 use scene::ScenePlugin;
 use tooltip::TooltipPlugin;
 use ui::UIPlugin;
@@ -51,6 +52,7 @@ fn main() {
                 })
                 .set(ImagePlugin::default_nearest()),
         )
+        .add_plugins(RngPlugin)
         .add_plugins(UiMaterialPlugin::<TextUIMaterial>::default())
         .add_plugins(UIPlugin)
         .add_plugins(ScenePlugin)
@@ -71,7 +73,6 @@ fn main() {
                 .load_collection::<GameAudio>(),
         )
         .add_systems(OnEnter(AppState::LoadingAssets), custom_load_assets)
-        .add_systems(PreStartup, init_rng)
         .add_systems(OnEnter(AppState::InitGame), setup_scene)
         // .add_systems(
         //     Update,
@@ -93,12 +94,6 @@ enum AppState {
     OrganizeInventory,
     Battling,
     GameOver,
-}
-
-pub struct Rng(ThreadRng);
-
-fn init_rng(world: &mut World) {
-    world.insert_non_send_resource(Rng(rand::thread_rng()));
 }
 
 fn setup_scene(mut commands: Commands, mut next_app_state: ResMut<NextState<AppState>>) {

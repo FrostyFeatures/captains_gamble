@@ -81,7 +81,9 @@ fn spawn_loot(
         .with_children(|parent| {
             ItemType::WoodenSword.spawn(parent, &game_sprites);
             ItemType::Grog.spawn(parent, &game_sprites);
-            ItemType::CursedJewel.spawn(parent, &game_sprites);
+            ItemType::Orange.spawn(parent, &game_sprites);
+            ItemType::Spyglass.spawn(parent, &game_sprites);
+            ItemType::BlessedCutlass.spawn(parent, &game_sprites);
         });
 }
 

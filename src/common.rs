@@ -9,10 +9,7 @@ pub struct Name(pub String);
 
 impl TooltipComponent for Name {
     fn get_tooltip_section(&self) -> TooltipSection {
-        TooltipSection {
-            text: self.0.clone(),
-            index: TooltipSectionIndex::Header,
-        }
+        TooltipSection::default_color(self.0.clone(), TooltipSectionIndex::Header)
     }
 }
 

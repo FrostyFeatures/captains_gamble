@@ -1,4 +1,5 @@
 use bevy::{ecs::system::EntityCommands, prelude::*, ui::RelativeCursorPosition};
+use rand::Rng;
 
 use crate::{
     assets::GameSprites,
@@ -9,11 +10,36 @@ use crate::{
 };
 
 use self::{
-    abilities::{AbilityTarget, Cursed, Damage, Heave, Jolly, SeaLegs, TargetFilter},
+    abilities::{
+        AbilityTarget, Cursed, Damage, Hearties, Heave, Jolly, SeaLegs, Swashbuckle, TargetFilter,
+    },
     attributes::{Pointy, POINTY},
 };
 pub mod abilities;
 pub mod attributes;
+
+const MUNDANGE_ITEMS: &[ItemType] = &[ItemType::Orange, ItemType::Grog, ItemType::WoodenSword];
+
+const SCARCE_ITEMS: &[ItemType] = &[
+    ItemType::IronSword,
+    ItemType::IronCutlass,
+    ItemType::Flag,
+    ItemType::Spyglass,
+];
+
+const PRECIOUS_ITEMS: &[ItemType] = &[
+    ItemType::BlessedSword,
+    ItemType::BlessedCutlass,
+    ItemType::CursedSword,
+    ItemType::CursedCutlass,
+];
+
+const MYTHIC_ITEMS: &[ItemType] = &[
+    ItemType::JewelOfTheSea,
+    ItemType::JewelOfTheEarth,
+    ItemType::JewelOfLife,
+    ItemType::CursedJewel,
+];
 
 pub struct ItemPlugin;
 
@@ -24,6 +50,75 @@ impl Plugin for ItemPlugin {
 }
 
 #[derive(Component, Clone, Copy, Debug)]
+pub enum Rarity {
+    Mundane,
+    Scarce,
+    Precious,
+    Mythic,
+}
+
+impl Rarity {
+    fn rand_item(&self, rng: &mut crate::rng::Rng) -> ItemType {
+        match self {
+            Rarity::Mundane => MUNDANGE_ITEMS[rng.0.gen_range(0..MUNDANGE_ITEMS.len())],
+            Rarity::Scarce => SCARCE_ITEMS[rng.0.gen_range(0..SCARCE_ITEMS.len())],
+            Rarity::Precious => PRECIOUS_ITEMS[rng.0.gen_range(0..PRECIOUS_ITEMS.len())],
+            Rarity::Mythic => MYTHIC_ITEMS[rng.0.gen_range(0..MYTHIC_ITEMS.len())],
+        }
+    }
+
+    fn name(&self) -> String {
+        match self {
+            Rarity::Mundane => "Mundane".to_string(),
+            Rarity::Scarce => "Scarce".to_string(),
+            Rarity::Precious => "Precious".to_string(),
+            Rarity::Mythic => "Mythic".to_string(),
+        }
+    }
+}
+
+impl From<ItemType> for Rarity {
+    fn from(value: ItemType) -> Self {
+        for item in MUNDANGE_ITEMS {
+            if value == *item {
+                return Self::Mundane;
+            }
+        }
+        for item in SCARCE_ITEMS {
+            if value == *item {
+                return Self::Scarce;
+            }
+        }
+        for item in PRECIOUS_ITEMS {
+            if value == *item {
+                return Self::Precious;
+            }
+        }
+        for item in MYTHIC_ITEMS {
+            if value == *item {
+                return Self::Mythic;
+            }
+        }
+        panic!("Item has no rarity assigned");
+    }
+}
+
+impl TooltipComponent for Rarity {
+    fn get_tooltip_section(&self) -> TooltipSection {
+        TooltipSection {
+            text: self.name(),
+            index: TooltipSectionIndex::Footer,
+            color: match self {
+                Rarity::Mundane => Color::GRAY,
+                Rarity::Scarce => Color::BLUE,
+                Rarity::Precious => Color::ORANGE_RED,
+                Rarity::Mythic => Color::PURPLE,
+            },
+        }
+    }
+}
+
+#[derive(Component, PartialEq, Clone, Copy, Debug)]
 pub enum ItemType {
     WoodenSword,
     IronSword,
@@ -36,9 +131,10 @@ pub enum ItemType {
     Spyglass,
     Grog,
     JewelOfTheSea,   // + sea legs
-    JewelOfLife,     // + jolly
+    JewelOfLife,     // + hearties
     JewelOfTheEarth, // + ??
     CursedJewel,     // Cursed, + Damage
+    Orange,
 }
 
 impl ItemType {
@@ -58,11 +154,13 @@ impl ItemType {
             ItemType::JewelOfLife => 35,
             ItemType::JewelOfTheEarth => 37,
             ItemType::CursedJewel => 34,
+            ItemType::Orange => 16,
         }
     }
 
     pub fn name(&self) -> String {
         match self {
+            ItemType::Grog => "Grog".to_string(),
             ItemType::WoodenSword => "Wooden Sword".to_string(),
             ItemType::IronSword => "Iron Sword".to_string(),
             ItemType::BlessedSword => "Blessed Sword".to_string(),
@@ -72,11 +170,11 @@ impl ItemType {
             ItemType::CursedCutlass => "Cursed Cutlass".to_string(),
             ItemType::Flag => "Flag".to_string(),
             ItemType::Spyglass => "Spyglass".to_string(),
-            ItemType::Grog => "Grog".to_string(),
             ItemType::JewelOfTheSea => "Jewel of the Sea".to_string(),
             ItemType::JewelOfLife => "Jewel of Life".to_string(),
             ItemType::JewelOfTheEarth => "Jewel of the Earth".to_string(),
             ItemType::CursedJewel => "Cursed Jewel".to_string(),
+            ItemType::Orange => "Orange".to_string(),
         }
     }
 
@@ -96,6 +194,7 @@ impl ItemType {
                 ..default()
             },
             Name(self.name()),
+            Rarity::from(*self),
             Draggable,
             RelativeCursorPosition::default(),
             Tooltipable::default(),
@@ -109,7 +208,7 @@ impl ItemType {
             ItemType::WoodenSword => entity_commands.insert((Damage::new(3), Pointy)),
             ItemType::IronSword => entity_commands.insert((Damage::new(5), Pointy)),
             ItemType::BlessedSword => {
-                entity_commands.insert((Damage::new(4), Jolly::new(2), Pointy))
+                entity_commands.insert((Damage::new(4), Hearties::new(2), Pointy))
             }
             ItemType::CursedSword => {
                 entity_commands.insert((Damage::new(8), Cursed::new(2), Pointy))
@@ -118,7 +217,7 @@ impl ItemType {
                 entity_commands.insert((Damage::new(3), SeaLegs::new(1), Pointy))
             }
             ItemType::BlessedCutlass => {
-                entity_commands.insert((Damage::new(2), SeaLegs::new(1), Jolly::new(1), Pointy))
+                entity_commands.insert((Damage::new(2), SeaLegs::new(1), Hearties::new(1), Pointy))
             }
             ItemType::CursedCutlass => {
                 entity_commands.insert((Damage::new(5), SeaLegs::new(2), Cursed::new(2), Pointy))
@@ -138,19 +237,20 @@ impl ItemType {
                 },
             ),)),
             ItemType::Grog => entity_commands.insert((SeaLegs::new(3), Consumable(3))),
-            ItemType::JewelOfTheSea => todo!(),
-            ItemType::JewelOfLife => todo!(),
+            ItemType::JewelOfTheSea => entity_commands.insert((Swashbuckle::new(
+                1,
+                AbilityTarget::with_all_attributes(TargetFilter::All),
+            ),)),
+            ItemType::JewelOfLife => entity_commands.insert((Jolly::new(
+                1,
+                AbilityTarget::with_all_attributes(TargetFilter::All),
+            ),)),
             ItemType::JewelOfTheEarth => todo!(),
             ItemType::CursedJewel => entity_commands.insert((
                 Cursed::new(2),
-                Heave::new(
-                    1,
-                    AbilityTarget {
-                        filter: TargetFilter::All,
-                        attribute: POINTY.to_string(),
-                    },
-                ),
+                Heave::new(1, AbilityTarget::with_all_attributes(TargetFilter::All)),
             )),
+            ItemType::Orange => entity_commands.insert((Hearties::new(6), Consumable(1))),
         };
     }
 }
@@ -166,9 +266,6 @@ pub struct Consumable(pub i32);
 
 impl TooltipComponent for Consumable {
     fn get_tooltip_section(&self) -> TooltipSection {
-        TooltipSection {
-            text: format!("Consumable {}", self.0),
-            index: TooltipSectionIndex::Body,
-        }
+        TooltipSection::default_color(format!("Consumable {}", self.0), TooltipSectionIndex::Body)
     }
 }

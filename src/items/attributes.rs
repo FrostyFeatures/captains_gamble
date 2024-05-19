@@ -19,10 +19,7 @@ pub trait Attribute: TooltipComponent {
     fn name(&self) -> &'static str;
     fn _get_tooltip_section(&self) -> TooltipSection {
         let text = format!("{}", self.name());
-        TooltipSection {
-            text,
-            index: TooltipSectionIndex::Footer,
-        }
+        TooltipSection::default_color(text, TooltipSectionIndex::Footer)
     }
 }
 

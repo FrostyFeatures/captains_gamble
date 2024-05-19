@@ -4,9 +4,9 @@ use crate::{
     assets::{GameFonts, GameMaterials},
     common::Name,
     items::{
-        abilities::{Cursed, Damage, Heave, Jolly, SeaLegs},
+        abilities::{Cursed, Damage, Hearties, Heave, Jolly, SeaLegs, Swashbuckle},
         attributes::Pointy,
-        Consumable,
+        Consumable, Rarity,
     },
     AppState,
 };
@@ -26,14 +26,17 @@ impl Plugin for TooltipPlugin {
         use bevy_trait_query::RegisterExt;
 
         app.register_component_as::<dyn TooltipComponent, Damage>();
-        app.register_component_as::<dyn TooltipComponent, Jolly>();
+        app.register_component_as::<dyn TooltipComponent, Hearties>();
         app.register_component_as::<dyn TooltipComponent, Cursed>();
         app.register_component_as::<dyn TooltipComponent, Heave>();
         app.register_component_as::<dyn TooltipComponent, SeaLegs>();
+        app.register_component_as::<dyn TooltipComponent, Swashbuckle>();
+        app.register_component_as::<dyn TooltipComponent, Jolly>();
 
         app.register_component_as::<dyn TooltipComponent, Pointy>();
 
         app.register_component_as::<dyn TooltipComponent, Name>();
+        app.register_component_as::<dyn TooltipComponent, Rarity>();
         app.register_component_as::<dyn TooltipComponent, Consumable>();
 
         app.add_systems(
@@ -86,6 +89,14 @@ impl TooltipSectionIndex {
 pub struct TooltipSection {
     pub text: String,
     pub index: TooltipSectionIndex,
+    pub color: Color,
+}
+
+impl TooltipSection {
+    pub fn default_color(text: String, index: TooltipSectionIndex) -> Self {
+        let color = index.color();
+        Self { text, index, color }
+    }
 }
 
 #[derive(Component, Debug)]
@@ -125,7 +136,7 @@ impl Tooltip {
                         text: Text::from_section(
                             text_section.text.clone(),
                             TextStyle {
-                                color: text_section.index.color(),
+                                color: text_section.color,
                                 font_size: text_section.index.font_size(),
                                 font: game_fonts.font.clone(),
                                 ..default()

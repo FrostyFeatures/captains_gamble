@@ -8,7 +8,7 @@ use crate::{
     enemy::{Enemy, ENEMY_DAMAGE},
     inventory::InventoryScrollUI,
     items::{
-        abilities::{Ability, Cursed, Damage, Heave, Jolly, SeaLegs},
+        abilities::{Ability, Cursed, Damage, Hearties, Heave, Jolly, SeaLegs, Swashbuckle},
         attributes::Attribute,
         Consumable,
     },
@@ -60,10 +60,12 @@ impl Plugin for BattlePlugin {
                 (
                     player_turn_use_item,
                     handle_damage_use,
-                    handle_jolly_use,
+                    handle_hearties_use,
                     handle_cursed_use,
                     handle_heave_use,
                     handle_sea_legs_use,
+                    handle_swashbuckle_use,
+                    handle_jolly_use,
                     update_scroll_marker_pos,
                     update_scroll_marker_ui_pos,
                     animate_scroll_marker,
@@ -347,21 +349,21 @@ fn handle_damage_use(
     }
 }
 
-fn handle_jolly_use(
+fn handle_hearties_use(
     // mut log_message_ew: EventWriter<LogMessageEvent>,
     mut battle_event_ew: EventWriter<BattleEvent>,
     mut use_item_ev: EventReader<UseItem>,
     mut player_hp_q: Query<&mut Hp, With<Player>>,
-    jolly_q: Query<&Jolly>,
+    hearties_q: Query<&Hearties>,
 ) {
     let Ok(mut player_hp) = player_hp_q.get_single_mut() else {
         return;
     };
     for item_e in use_item_ev.read() {
-        let Ok(jolly) = jolly_q.get(item_e.item) else {
+        let Ok(hearties) = hearties_q.get(item_e.item) else {
             continue;
         };
-        let amount = jolly.amount();
+        let amount = hearties.amount();
         battle_event_ew.send(BattleEvent::PlayerHeal(amount));
         // log_message_ew.send(LogMessageEvent(format!("Healed {} health!", amount)));
         player_hp.increase(amount);
@@ -425,7 +427,7 @@ fn handle_heave_use(
             if let Ok((mut damage, attributes)) = damage_q.get_mut(damage_e) {
                 if attributes
                     .iter()
-                    .any(|a| a.name() == heave.target.attribute)
+                    .any(|a| a.name().contains(&heave.target.attribute))
                 {
                     damage.modifier.amount += amount;
                 }
@@ -448,5 +450,91 @@ fn handle_sea_legs_use(
         let amount = sea_legs.amount();
         // log_message_ew.send(LogMessageEvent(format!("Added {amount} Sea Legs!")));
         player_stats_q.single_mut().sea_legs += amount;
+    }
+}
+
+fn handle_swashbuckle_use(
+    // mut log_message_ew: EventWriter<LogMessageEvent>,
+    mut use_item_er: EventReader<UseItem>,
+    mut sea_legs_q: Query<(&mut Damage, &dyn Attribute)>,
+    swashbuckle_q: Query<&Swashbuckle>,
+    scroll_q: Query<&Children, With<InventoryScrollUI>>,
+) {
+    let Ok(scroll_children) = scroll_q.get_single() else {
+        return;
+    };
+    for item_e in use_item_er.read() {
+        let Ok(swashbuckle) = swashbuckle_q.get(item_e.item) else {
+            continue;
+        };
+        let i = scroll_children
+            .iter()
+            .enumerate()
+            .filter(|(_, &c)| c == item_e.item)
+            .map(|(i, _)| i)
+            .next();
+        let Some(scroll_pos) = i else {
+            continue;
+        };
+        let amount = swashbuckle.amount();
+        let targets =
+            swashbuckle
+                .target
+                .filter
+                .get_targets(scroll_pos, item_e.item, scroll_children.iter());
+        for &sea_legs_e in targets.iter() {
+            if let Ok((mut sea_legs, attributes)) = sea_legs_q.get_mut(sea_legs_e) {
+                if attributes
+                    .iter()
+                    .any(|a| a.name().contains(&swashbuckle.target.attribute))
+                {
+                    sea_legs.modifier.amount += amount;
+                }
+            }
+        }
+        // log_message_ew.send(LogMessageEvent(format!("Heaved {}!", amount)));
+    }
+}
+
+fn handle_jolly_use(
+    // mut log_message_ew: EventWriter<LogMessageEvent>,
+    mut use_item_er: EventReader<UseItem>,
+    mut hearties_q: Query<(&mut Damage, &dyn Attribute)>,
+    jolly_q: Query<&Jolly>,
+    scroll_q: Query<&Children, With<InventoryScrollUI>>,
+) {
+    let Ok(scroll_children) = scroll_q.get_single() else {
+        return;
+    };
+    for item_e in use_item_er.read() {
+        let Ok(jolly) = jolly_q.get(item_e.item) else {
+            continue;
+        };
+        let i = scroll_children
+            .iter()
+            .enumerate()
+            .filter(|(_, &c)| c == item_e.item)
+            .map(|(i, _)| i)
+            .next();
+        let Some(scroll_pos) = i else {
+            continue;
+        };
+        let amount = jolly.amount();
+        let targets =
+            jolly
+                .target
+                .filter
+                .get_targets(scroll_pos, item_e.item, scroll_children.iter());
+        for &hearties_e in targets.iter() {
+            if let Ok((mut hearties, attributes)) = hearties_q.get_mut(hearties_e) {
+                if attributes
+                    .iter()
+                    .any(|a| a.name().contains(&jolly.target.attribute))
+                {
+                    hearties.modifier.amount += amount;
+                }
+            }
+        }
+        // log_message_ew.send(LogMessageEvent(format!("Heaved {}!", amount)));
     }
 }

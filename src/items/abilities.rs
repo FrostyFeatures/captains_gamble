@@ -9,10 +9,12 @@ impl Plugin for AbilityPlugin {
         use bevy_trait_query::RegisterExt;
 
         app.register_component_as::<dyn Ability, Damage>();
-        app.register_component_as::<dyn Ability, Jolly>();
-        app.register_component_as::<dyn Ability, Cursed>();
         app.register_component_as::<dyn Ability, Heave>();
+        app.register_component_as::<dyn Ability, Hearties>();
+        app.register_component_as::<dyn Ability, Jolly>();
         app.register_component_as::<dyn Ability, SeaLegs>();
+        app.register_component_as::<dyn Ability, Swashbuckle>();
+        app.register_component_as::<dyn Ability, Cursed>();
     }
 }
 
@@ -26,7 +28,6 @@ pub trait Ability {
     fn name(&self) -> String;
     fn base(&self) -> i32;
     fn modifier(&self) -> &AbilityModifier;
-    fn modifier_mut(&mut self) -> &mut AbilityModifier;
     fn amount(&self) -> i32 {
         self.base() + self.modifier().amount
     }
@@ -44,10 +45,7 @@ where
         } else if amount < 0 {
             text.push_str(format!("\n\t{}", amount).as_str());
         }
-        TooltipSection {
-            text,
-            index: TooltipSectionIndex::Body,
-        }
+        TooltipSection::default_color(text, TooltipSectionIndex::Body)
     }
 }
 
@@ -55,6 +53,15 @@ where
 pub struct AbilityTarget {
     pub filter: TargetFilter,
     pub attribute: String,
+}
+
+impl AbilityTarget {
+    pub fn with_all_attributes(filter: TargetFilter) -> Self {
+        Self {
+            filter,
+            attribute: "".to_string(),
+        }
+    }
 }
 
 #[derive(Default, Clone, Copy, Debug)]
@@ -129,27 +136,23 @@ impl Ability for Damage {
     fn modifier(&self) -> &AbilityModifier {
         &self.modifier
     }
-
-    fn modifier_mut(&mut self) -> &mut AbilityModifier {
-        &mut self.modifier
-    }
 }
 
 #[derive(Component, Default, Debug, Clone)]
-pub struct Jolly {
+pub struct Hearties {
     pub base: i32,
     pub modifier: AbilityModifier,
 }
 
-impl Jolly {
+impl Hearties {
     pub fn new(base: i32) -> Self {
         Self { base, ..default() }
     }
 }
 
-impl Ability for Jolly {
+impl Ability for Hearties {
     fn name(&self) -> String {
-        "Jolly".to_string()
+        "Hearties".to_string()
     }
 
     fn base(&self) -> i32 {
@@ -158,10 +161,6 @@ impl Ability for Jolly {
 
     fn modifier(&self) -> &AbilityModifier {
         &self.modifier
-    }
-
-    fn modifier_mut(&mut self) -> &mut AbilityModifier {
-        &mut self.modifier
     }
 }
 
@@ -188,10 +187,6 @@ impl Ability for Cursed {
 
     fn modifier(&self) -> &AbilityModifier {
         &self.modifier
-    }
-
-    fn modifier_mut(&mut self) -> &mut AbilityModifier {
-        &mut self.modifier
     }
 }
 
@@ -228,9 +223,31 @@ impl Ability for Heave {
     fn modifier(&self) -> &AbilityModifier {
         &self.modifier
     }
+}
 
-    fn modifier_mut(&mut self) -> &mut AbilityModifier {
-        &mut self.modifier
+#[derive(Component, Default, Clone, Debug)]
+pub struct Swashbuckle {
+    pub base: i32,
+    pub target: AbilityTarget,
+}
+
+impl Swashbuckle {
+    pub fn new(base: i32, target: AbilityTarget) -> Self {
+        Self { base, target }
+    }
+}
+
+impl Ability for Swashbuckle {
+    fn name(&self) -> String {
+        "Swashbuckle".to_string()
+    }
+
+    fn base(&self) -> i32 {
+        self.base
+    }
+
+    fn modifier(&self) -> &AbilityModifier {
+        &AbilityModifier { amount: 0 }
     }
 }
 
@@ -258,8 +275,30 @@ impl Ability for SeaLegs {
     fn modifier(&self) -> &AbilityModifier {
         &self.modifier
     }
+}
 
-    fn modifier_mut(&mut self) -> &mut AbilityModifier {
-        &mut self.modifier
+#[derive(Component, Default, Clone, Debug)]
+pub struct Jolly {
+    pub base: i32,
+    pub target: AbilityTarget,
+}
+
+impl Jolly {
+    pub fn new(base: i32, target: AbilityTarget) -> Self {
+        Self { base, target }
+    }
+}
+
+impl Ability for Jolly {
+    fn name(&self) -> String {
+        "Jolly".to_string()
+    }
+
+    fn base(&self) -> i32 {
+        self.base
+    }
+
+    fn modifier(&self) -> &AbilityModifier {
+        &AbilityModifier { amount: 0 }
     }
 }
