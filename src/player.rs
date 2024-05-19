@@ -5,7 +5,7 @@ use crate::{
     battle::BattleState,
     common::Hp,
     ui::{BottomLeftUI, HealthBarUI, HealthBarUIText, FONT_COLOR, FONT_SIZE},
-    AppState,
+    AppState, BattleWins,
 };
 
 const STARTING_PLAYER_HP: i32 = 10;
@@ -16,7 +16,7 @@ impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             OnEnter(AppState::GameStart),
-            (setup_player, spawn_player_stats_ui).chain(),
+            (setup_player, spawn_player_stats_ui, spawn_battle_wins_ui).chain(),
         )
         .add_systems(OnExit(AppState::GameOver), destroy_player)
         .add_systems(
@@ -24,6 +24,7 @@ impl Plugin for PlayerPlugin {
             (
                 update_player_hp_ui.run_if(any_with_component::<HealthBarUI>),
                 update_player_stats_ui.run_if(any_with_component::<SeaLegsUI>),
+                update_battle_wins_ui.run_if(any_with_component::<BattleWinsUI>),
             ),
         )
         .add_systems(OnEnter(AppState::Battling), reset_player_stats)
@@ -45,6 +46,9 @@ pub struct PlayerStats {
 
 #[derive(Component)]
 struct SeaLegsUI;
+
+#[derive(Component)]
+struct BattleWinsUI;
 
 #[derive(Bundle)]
 struct PlayerBundle {
@@ -117,6 +121,52 @@ fn spawn_player_stats_ui(
                 Player,
             );
         });
+}
+
+fn spawn_battle_wins_ui(
+    mut commands: Commands,
+    game_fonts: Res<GameFonts>,
+    battle_wins: Res<BattleWins>,
+    bottom_left_ui_q: Query<Entity, With<BottomLeftUI>>,
+) {
+    let text = commands
+        .spawn((
+            Player,
+            BattleWinsUI,
+            TextBundle {
+                text: Text::from_sections(vec![
+                    TextSection {
+                        value: "Wins: ".to_string(),
+                        style: TextStyle {
+                            color: FONT_COLOR,
+                            font_size: FONT_SIZE,
+                            font: game_fonts.font.clone(),
+                        },
+                    },
+                    TextSection {
+                        value: format!("{}", battle_wins.0),
+                        style: TextStyle {
+                            color: FONT_COLOR,
+                            font_size: FONT_SIZE,
+                            font: game_fonts.font.clone(),
+                        },
+                    },
+                ]),
+                ..default()
+            },
+        ))
+        .id();
+    commands
+        .entity(bottom_left_ui_q.single())
+        .insert_children(0, &[text]);
+}
+
+fn update_battle_wins_ui(
+    mut battle_wins_ui_q: Query<&mut Text, With<BattleWinsUI>>,
+    battle_wins: Res<BattleWins>,
+) {
+    let mut ui_text = battle_wins_ui_q.single_mut();
+    ui_text.sections.get_mut(1).unwrap().value = format!("{}", battle_wins.0);
 }
 
 fn reset_player_stats(mut player_stats_q: Query<&mut PlayerStats>) {

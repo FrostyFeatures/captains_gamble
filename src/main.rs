@@ -74,6 +74,7 @@ fn main() {
         )
         .add_systems(OnEnter(AppState::LoadingAssets), custom_load_assets)
         .add_systems(OnEnter(AppState::InitGame), setup_scene)
+        .add_systems(OnEnter(AppState::GameStart), reset_battle_wins)
         // .add_systems(
         //     Update,
         //     (
@@ -96,6 +97,9 @@ enum AppState {
     GameOver,
 }
 
+#[derive(Resource, Default)]
+pub struct BattleWins(pub usize);
+
 fn setup_scene(mut commands: Commands, mut next_app_state: ResMut<NextState<AppState>>) {
     commands.spawn(Camera2dBundle {
         ..Default::default()
@@ -104,29 +108,33 @@ fn setup_scene(mut commands: Commands, mut next_app_state: ResMut<NextState<AppS
     next_app_state.set(AppState::GameStart);
 }
 
-fn restart_game(
-    mut next_app_state: ResMut<NextState<AppState>>,
-    key_codes: Res<ButtonInput<KeyCode>>,
-) {
-    if key_codes.just_pressed(KeyCode::Space) {
-        next_app_state.set(AppState::GameStart);
-    }
+fn reset_battle_wins(mut commands: Commands) {
+    commands.insert_resource(BattleWins::default());
 }
 
-fn start_game(
-    mut next_app_state: ResMut<NextState<AppState>>,
-    key_codes: Res<ButtonInput<KeyCode>>,
-) {
-    if key_codes.just_pressed(KeyCode::Space) {
-        next_app_state.set(AppState::OrganizeInventory);
-    }
-}
-
-fn start_battle(
-    mut next_app_state: ResMut<NextState<AppState>>,
-    key_codes: Res<ButtonInput<KeyCode>>,
-) {
-    if key_codes.just_pressed(KeyCode::Space) {
-        next_app_state.set(AppState::Battling);
-    }
-}
+// fn restart_game(
+//     mut next_app_state: ResMut<NextState<AppState>>,
+//     key_codes: Res<ButtonInput<KeyCode>>,
+// ) {
+//     if key_codes.just_pressed(KeyCode::Space) {
+//         next_app_state.set(AppState::GameStart);
+//     }
+// }
+//
+// fn start_game(
+//     mut next_app_state: ResMut<NextState<AppState>>,
+//     key_codes: Res<ButtonInput<KeyCode>>,
+// ) {
+//     if key_codes.just_pressed(KeyCode::Space) {
+//         next_app_state.set(AppState::OrganizeInventory);
+//     }
+// }
+//
+// fn start_battle(
+//     mut next_app_state: ResMut<NextState<AppState>>,
+//     key_codes: Res<ButtonInput<KeyCode>>,
+// ) {
+//     if key_codes.just_pressed(KeyCode::Space) {
+//         next_app_state.set(AppState::Battling);
+//     }
+// }

@@ -15,6 +15,7 @@ use crate::{
     // log::LogMessageEvent,
     player::{Player, PlayerStats},
     AppState,
+    BattleWins,
 };
 
 const SCROLL_MARKER_TOP: f32 = -2.;
@@ -39,7 +40,6 @@ impl Plugin for BattlePlugin {
                         .run_if(in_state(BattleState::EnemyTurn)),
                 ),
             )
-            .add_systems(OnEnter(AppState::GameStart), reset_battle_wins)
             .add_systems(OnEnter(AppState::Battling), setup_battle)
             .add_systems(OnExit(AppState::Battling), cleanup_battle)
             .add_systems(
@@ -97,9 +97,6 @@ pub struct PlayerTurnSet;
 #[derive(SystemSet, Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub struct EnemyTurnSet;
 
-#[derive(Resource, Default)]
-pub struct BattleWins(pub usize);
-
 #[derive(Event)]
 pub struct UseItem {
     pub item: Entity,
@@ -116,10 +113,6 @@ struct ScrollMarker(usize);
 struct ScrollMarkerBundle {
     scroll_marker: ScrollMarker,
     atlas_image_bundle: AtlasImageBundle,
-}
-
-fn reset_battle_wins(mut commands: Commands) {
-    commands.insert_resource(BattleWins::default());
 }
 
 fn setup_battle(

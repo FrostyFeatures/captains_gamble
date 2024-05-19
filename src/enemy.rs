@@ -2,10 +2,9 @@ use bevy::prelude::*;
 
 use crate::{
     assets::{GameFonts, GameSprites},
-    battle::BattleWins,
     common::Hp,
     ui::{BottomRightUI, HealthBarUI, HealthBarUIText},
-    AppState,
+    AppState, BattleWins,
 };
 
 pub const ENEMY_DAMAGE: i32 = 3;
